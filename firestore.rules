@@ -1,0 +1,11 @@
+rules_version = '2';
+// Regras publicadas no projeto obrabit-visitas.
+// Só quem está logado lê e grava as visitas. Como a inscrição pelo app está desativada
+// (Authentication → Configurações → Ações do usuário), só as contas cadastradas no console entram.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /visitas/{id} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

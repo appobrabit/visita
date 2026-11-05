@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Visita OBRABIT</title>
+<meta name="theme-color" content="#18212A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Visita OBRABIT">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+/* App de visita técnica OBRABIT: uma coluna de toque largo; cabeçalho fixo com abas Cliente · Ambientes · Fechar visita */
+:root{
+  --bg:#EEF1F3; --surface:#FFFFFF; --sunk:#E3E8EC; --line:#CDD5DC;
+  --fg:#16212B; --muted:#5B6873; --accent:#1D5FA8; --accent-ink:#FFFFFF; --accent-soft:#DCE8F6;
+  --mark:#F2B632; --ok:#2E7D4F; --warn:#B86E00; --bad:#B3392F;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10161C; --surface:#18212A; --sunk:#0C1116; --line:#2C3843;
+  --fg:#E6ECF1; --muted:#97A5B1; --accent:#5B9BE0; --accent-ink:#0B1622; --accent-soft:#1D3047;
+  --mark:#F2B632; --ok:#5BBF83; --warn:#E3A33C; --bad:#E2766C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10161C; --surface:#18212A; --sunk:#0C1116; --line:#2C3843;
+  --fg:#E6ECF1; --muted:#97A5B1; --accent:#5B9BE0; --accent-ink:#0B1622; --accent-soft:#1D3047;
+  --mark:#F2B632; --ok:#5BBF83; --warn:#E3A33C; --bad:#E2766C; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 96px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:2rem;line-height:1.05}
+h2{font-size:1.45rem}
+h3{font-size:1.2rem}
+.eyebrow{font-family:var(--f-display);font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:.8rem;color:var(--muted)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--mark);outline-offset:2px}
+input,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;width:100%;min-width:0}
+textarea{min-height:72px;resize:vertical}
+label.lbl{display:block;font-weight:600;font-size:.92rem;margin-bottom:6px}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .in{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 0}
+.toprow{display:flex;align-items:center;gap:10px;min-height:44px}
+.toprow .t{flex:1;min-width:0}
+.toprow .t b{display:block;font-family:var(--f-display);font-size:1.25rem;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;min-width:44px;height:44px;display:grid;place-items:center;font-size:1.2rem}
+.sync{font-size:.78rem;display:flex;align-items:center;gap:6px;color:var(--muted);white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
+@media (max-width:440px){.sync .lbl2{display:none}}
+.tabs{display:flex;gap:2px;overflow-x:auto;margin-top:8px;scrollbar-width:none}
+.tabs button{flex:1;border:0;background:none;padding:10px 8px 12px;font-family:var(--f-display);font-weight:600;font-size:1.02rem;letter-spacing:.03em;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:10px;background:var(--mark);color:#1B1400;font-family:var(--f-body);font-size:.75rem;font-weight:600;margin-left:4px;line-height:20px;text-align:center}
+
+.stack{display:flex;flex-direction:column;gap:14px}
+.stack>*,.secbody>*,.field>*{min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:480px){.grid2{grid-template-columns:1fr}}
+.btn{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:11px 16px;font-weight:600;min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;color:var(--fg)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{color:var(--bad);border-color:var(--bad)}
+.btn.block{width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spacer{height:6px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;min-height:42px;font-size:.95rem;display:inline-flex;align-items:center;gap:8px;line-height:1.15;text-align:left}
+.chip.hasic{border-radius:10px;padding:6px 12px 6px 8px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.chip .sw{width:18px;height:18px;border-radius:50%;border:1px solid rgba(0,0,0,.25);flex:none}
+.chip .sw.stone{border-radius:4px;width:22px}
+.chip.later{border-style:dashed}
+svg.ic{width:40px;height:27px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+svg.ic .ac{stroke:var(--mark)}
+.chip[aria-pressed="true"] svg.ic .ac{stroke:currentColor;stroke-dasharray:2 2}
+.field{display:flex;flex-direction:column;gap:8px}
+.field .fl{font-weight:600;font-size:.95rem;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.field .fl .req{color:var(--warn);font-size:.78rem;font-weight:600}
+.infobtn{border:1.5px solid var(--accent);color:var(--accent);background:transparent;border-radius:999px;font-size:.78rem;font-weight:600;padding:2px 10px;min-height:28px}
+.infobtn[aria-expanded="true"]{background:var(--accent);color:var(--accent-ink)}
+.hint{margin:0;font-size:.88rem;background:var(--accent-soft);border-radius:8px;padding:8px 12px;line-height:1.4}
+.hint b{font-weight:600}
+.guide{background:var(--sunk);border-radius:8px;padding:6px 12px;display:flex;flex-direction:column}
+.guide .gi{display:flex;gap:12px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.guide .gi:last-child{border-bottom:0}
+.guide .gi .gv{width:40px;flex:none;display:grid;place-items:center;padding-top:2px}
+.guide .gi .gv .sw{width:22px;height:22px;border-radius:4px;border:1px solid rgba(0,0,0,.25)}
+.guide .gi div{font-size:.88rem;line-height:1.38}
+.guide .gi div b{display:block;font-size:.93rem}
+.numrow{display:flex;align-items:center;gap:8px}
+.numrow input{max-width:140px}
+
+.roomcard{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px}
+.roomcard .nm{font-family:var(--f-display);font-weight:700;font-size:1.25rem}
+.roomcard .meta{font-size:.86rem;color:var(--muted)}
+.roomcard .grow{flex:1;min-width:0}
+.prog{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;margin-top:8px}
+.prog i{display:block;height:100%;background:var(--ok)}
+.typegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+.typegrid button{border:1.5px solid var(--line);background:var(--surface);border-radius:8px;padding:12px;font-weight:600;min-height:52px;text-align:left}
+
+details.sec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+details.sec>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:14px 16px;cursor:pointer;min-height:56px}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary .sn{font-family:var(--f-display);font-weight:700;font-size:1.18rem;flex:1}
+details.sec>summary .st{font-size:.8rem;color:var(--muted);text-align:right;max-width:55%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+details.sec>summary .st.on{color:var(--ok);font-weight:600}
+details.sec>summary::after{content:"";width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:4px;flex:none}
+details.sec[open]>summary::after{transform:rotate(-135deg)}
+.secbody{padding:16px 16px 18px;display:flex;flex-direction:column;gap:20px;border-top:1px dashed var(--line)}
+.ask{margin:0;font-size:.86rem;color:var(--muted);font-style:italic}
+
+.med{background:var(--sunk);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:12px}
+.med .grid3 input{font-family:var(--f-mono)}
+.calc{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.calc div{background:var(--surface);border-radius:8px;padding:8px 10px;border:1px solid var(--line)}
+.calc b{display:block;font-family:var(--f-mono);font-size:1.1rem;font-variant-numeric:tabular-nums}
+.calc span{font-size:.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+@media (max-width:420px){.calc{grid-template-columns:1fr 1fr}}
+
+.vcard{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.vcard .nm{font-family:var(--f-display);font-weight:700;font-size:1.35rem;line-height:1.1}
+.pill{display:inline-block;font-size:.74rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.draft{color:var(--warn)}.pill.done{color:var(--ok)}.pill.ex{color:var(--muted)}
+.empty{border:2px dashed var(--line);border-radius:var(--r);padding:28px 20px;text-align:center}
+.hero{padding:26px 0 18px;display:flex;flex-direction:column;gap:8px}
+.hero p{margin:0;max-width:60ch;color:var(--muted)}
+.pend{background:color-mix(in srgb,var(--mark) 16%,var(--surface));border:1px solid var(--mark);border-radius:var(--r);padding:14px 16px}
+.pend ul{margin:6px 0 0;padding-left:20px}
+.donebox{border:1px solid var(--ok);border-radius:var(--r);padding:14px 16px;background:color-mix(in srgb,var(--ok) 10%,var(--surface))}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;z-index:20;max-width:90vw}
+.confirm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:color-mix(in srgb,var(--bad) 12%,var(--surface));border:1px solid var(--bad);border-radius:8px;padding:10px}
+/* levantamento e login */
+.kv{display:grid;grid-template-columns:minmax(110px,38%) 1fr;gap:4px 12px;font-size:.92rem;margin:0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.doc h3{margin-top:4px}
+.doc .rm{border-top:1px solid var(--line);padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.doc .sh{font-weight:600;font-size:.95rem;margin:4px 0 2px}
+.linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;padding:6px 4px;font-weight:600}
+.who{text-align:center;margin:8px 0 0}
+@media (prefers-reduced-motion:no-preference){.chip,.tabs button{transition:background .12s,border-color .12s,color .12s}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+(function(){
+"use strict";
+/* ============ DESENHOS (48×32, traço) ============ */
+const R='<rect x="4" y="4" width="40" height="24"/>';
+const IC={
+ alinH:R+'<path d="M4 12h40M4 20h40M17 4v24M30 4v24"/>',
+ alinV:R+'<path d="M12 4v24M20 4v24M28 4v24M36 4v24M4 16h40"/>',
+ amarr:R+'<path d="M4 12h40M4 20h40M17 4v8M31 4v8M10 12v8M24 12v8M38 12v8M17 20v8M31 20v8"/>',
+ espinha:'<path d="M4 28l8-8 8 8 8-8 8 8 8-8M4 20l8-8 8 8 8-8 8 8 8-8M4 12l8-8 8 8 8-8 8 8 8-8"/>',
+ diag:R+'<path d="M4 16L16 4M4 28L28 4M16 28L40 4M28 28L44 12"/>',
+ quad:R+'<path d="M4 12h40M4 20h40M12 4v24M20 4v24M28 4v24M36 4v24"/>',
+ metro:R+'<path d="M4 9h40M4 14h40M4 19h40M4 24h40M12 4v5M24 4v5M36 4v5M6 9v5M18 9v5M30 9v5M42 9v5M12 14v5M24 14v5M36 14v5M6 19v5M18 19v5M30 19v5M42 19v5M12 24v4M24 24v4M36 24v4"/>',
+ longo:R+'<path d="M4 12h40M4 20h40M24 4v8M14 12v8M34 12v8M24 20v8"/>',
+ ret:R+'<path d="M4 16h40M24 4v12M14 16v12M34 16v12"/>',
+ hex:'<path d="M10 6l6-3 6 3v7l-6 3-6-3zM22 6l6-3 6 3v7l-6 3-6-3zM16 16l6-3 6 3v7l-6 3-6-3zM28 16l6-3 6 3v7l-6 3-6-3z"/>',
+ escama:'<path d="M4 12a5 5 0 0 1 10 0a5 5 0 0 1 10 0a5 5 0 0 1 10 0a5 5 0 0 1 10 0M9 20a5 5 0 0 1 10 0a5 5 0 0 1 10 0a5 5 0 0 1 10 0M4 28a5 5 0 0 1 10 0a5 5 0 0 1 10 0a5 5 0 0 1 10 0a5 5 0 0 1 10 0"/>',
+ regua:'<path d="M4 4h40M4 10h40M4 16h40M4 22h40M4 28h40M20 4v6M36 10v6M12 16v6M28 22v6"/>',
+ grande:R+'<path d="M24 4v24"/>',
+ sancaAb:'<path d="M6 30V4h38M16 12h28M16 16h28M16 12v4"/><path class="ac" d="M10 8l4 3M9 13h4M10 18l4-2"/>',
+ sancaFe:'<path d="M6 30V4h38M6 16h14V4"/><path class="ac" d="M11 19l-2 5M13 19v5M15 19l2 5"/>',
+ tabica:'<path d="M6 30V4h38M12 12h32M12 16h32M8 10v6h4"/>',
+ negativo:'<path d="M6 30V4h38M6 12h4v5h4v-5h30M14 16h30"/>',
+ cortineiro:'<path d="M4 4h40M44 4v26M4 12h28V4"/><path class="ac" d="M37 7v21M40 7v21"/>',
+ alcapao:'<path d="M6 30V4h38M6 12h12M30 12h14M18 12l10 8"/>',
+ drywall:'<path d="M6 30V4h38M6 14h38M6 17h38M12 4v10M24 4v10M36 4v10"/>',
+ gesso:'<path d="M6 30V4h38M6 14h38M6 17h38M18 14v3M30 14v3"/>',
+ pvc:'<path d="M6 30V4h38M6 14h38M6 18h38M10 14v4M15 14v4M20 14v4M25 14v4M30 14v4M35 14v4M40 14v4"/>',
+ madeiraForro:'<path d="M6 30V4h38M6 14h38M6 19h38M14 14v5M28 14v5M40 14v5"/><path class="ac" d="M9 16h3M20 17h5M32 16h4"/>',
+ bReta:'<path d="M4 12h36v6H4z"/>',
+ bMeia:'<path d="M4 12h36v14h-5v-8H4z"/>',
+ bBol:'<path d="M4 12h32q4 0 4 3t-4 3H4z"/>',
+ bChanf:'<path d="M4 12h33l3 3v3H4z"/>',
+ fosco:'<rect x="6" y="6" width="36" height="20"/>',
+ acet:'<rect x="6" y="6" width="36" height="20"/><path class="ac" d="M16 10l-5 5"/>',
+ semi:'<rect x="6" y="6" width="36" height="20"/><path class="ac" d="M16 10l-5 5M22 10l-8 8"/>',
+ brilho:'<rect x="6" y="6" width="36" height="20"/><path class="ac" d="M16 10l-5 5M22 10l-8 8M28 10l-9 9M38 19l-4 4"/>',
+ antiderr:'<rect x="6" y="6" width="36" height="20"/><path stroke-width="3" d="M12 11h.5M20 11h.5M28 11h.5M36 11h.5M16 16h.5M24 16h.5M32 16h.5M12 21h.5M20 21h.5M28 21h.5M36 21h.5"/>',
+ amad:'<rect x="6" y="6" width="36" height="20"/><path d="M6 12q10-3 20 0t16 0M6 19q10 3 20 0t16 0"/>',
+ marm:'<rect x="6" y="6" width="36" height="20"/><path d="M10 26q6-10 14-8t14-12M20 26q4-4 10-3"/>',
+ ciment:'<rect x="6" y="6" width="36" height="20"/><path stroke-width="2.6" d="M11 10h.5M27 9h.5M19 15h.5M35 14h.5M13 21h.5M29 22h.5M38 20h.5"/>',
+ jCorrer2:R+'<path d="M24 4v24"/><path class="ac" d="M29 16h8M34 13l3 3-3 3"/>',
+ jCorrer4:R+'<path d="M14 4v24M24 4v24M34 4v24"/>',
+ jMaxim:R+'<path class="ac" d="M6 6l18 20 18-20"/>',
+ jBasc:R+'<path d="M8 9l32 3M8 16l32 3M8 23l32 3"/>',
+ jCamarao:'<path d="M6 4l9 4v20l-9-4zM15 8l9-4v20l-9 4M24 4l9 4v20l-9-4M33 8l9-4v20l-9 4"/>',
+ jPivo:R+'<path class="ac" d="M24 4v24M14 28a10 4 0 0 0 20 0"/>',
+ jVenez:R+'<path d="M24 4v24M4 9h40M4 14h40M4 19h40M4 24h40"/>',
+ pCorrer:'<path d="M4 4h40M10 6h18v22H10zM20 6h18v22H20z"/>',
+ pCamarao:'<path d="M8 4l8 4v20l-8-4zM16 8l8-4v20l-8 4M24 4l8 4v20l-8-4M32 8l8-4v20l-8 4"/>',
+ boxCorrer:'<path d="M4 29h40"/><rect x="8" y="6" width="18" height="22"/><rect x="22" y="8" width="18" height="20"/>',
+ boxAbrir:'<path d="M4 29h40"/><rect x="8" y="6" width="16" height="22"/><path class="ac" d="M24 28l12-10M24 14a14 14 0 0 1 14 14"/>',
+ boxFixo:'<path d="M4 29h40"/><rect x="14" y="6" width="16" height="22"/><path class="ac" d="M34 10v4M36 13v4M38 10v4"/>',
+ boxTeto:'<path d="M4 3h40M4 29h40"/><rect x="8" y="3" width="18" height="25"/><rect x="22" y="3" width="18" height="25"/>',
+ divis:'<path d="M4 22h40M4 26h40M20 4v18"/>',
+ espelho:'<rect x="14" y="3" width="20" height="26" rx="3"/><path class="ac" d="M18 8l6-3M18 13l10-6"/>',
+ espLED:'<rect x="12" y="3" width="24" height="26" rx="5"/><rect class="ac" x="15" y="6" width="18" height="20" rx="3"/>',
+ portaVidro:'<path d="M4 29h40"/><rect x="14" y="4" width="20" height="24"/><path d="M30 14v4"/>',
+ guarda:'<path d="M4 29h40M4 10h40M10 10v19M38 10v19"/><path class="ac" d="M16 14l4-3M26 14l4-3"/>',
+ mAlav:'<circle cx="12" cy="16" r="5"/><path d="M12 14h28v4H12"/>',
+ mBola:'<circle cx="12" cy="16" r="5"/><circle cx="27" cy="16" r="8"/>',
+ mRoseta:'<circle cx="12" cy="16" r="3"/><path d="M12 15h26"/>',
+ mEsp:'<rect x="8" y="2" width="8" height="28" rx="2"/><path d="M12 11h28"/><circle cx="12" cy="22" r="1.5"/>',
+ fLin:'<rect x="6" y="6" width="36" height="7"/>',
+ fL:'<path d="M6 6h36v7H13v14H6z"/>',
+ fU:'<path d="M6 6h36v21h-7V13H13v14H6z"/>',
+ fIlha:'<path d="M6 6h36v7H13v14H6z"/><rect x="21" y="19" width="17" height="7"/>',
+ pLisa:'<rect x="12" y="3" width="24" height="26"/>',
+ pRip:'<rect x="12" y="3" width="24" height="26"/><path d="M16 3v26M20 3v26M24 3v26M28 3v26M32 3v26"/>',
+ pVidro:'<rect x="12" y="3" width="24" height="26"/><rect class="ac" x="15" y="6" width="18" height="20"/>',
+ pCava:'<rect x="12" y="3" width="24" height="26"/><path d="M12 7h24"/>',
+ pPerfil:'<rect x="12" y="3" width="24" height="26"/><path d="M32 3v26M30 3v26"/>',
+ pToque:'<rect x="12" y="3" width="24" height="26"/><circle class="ac" cx="30" cy="16" r="2"/>',
+ plafon:'<path d="M4 4h40M14 4v3h20V4M14 7q10 7 20 0"/>',
+ plafonEmb:'<path d="M4 6h10M34 6h10M14 6q10 7 20 0"/>',
+ spot:'<path d="M4 4h40M20 4h8v3h-8z"/><path class="ac" d="M20 7l-6 20M28 7l6 20"/>',
+ spotDir:'<path d="M4 4h40M24 4v3M19 7l9 2-2 6-9-2z"/><path class="ac" d="M17 13l-11 14M25 15l-5 13"/>',
+ trilho:'<path d="M4 6h40M12 6v3M24 6v3M36 6v3M9 9h6v5H9zM21 9h6v5h-6zM33 9h6v5h-6z"/>',
+ trilhoMag:'<path d="M4 5h40M4 9h40M8 9h12M28 9h12"/><path class="ac" d="M10 12l-3 10M18 12l3 10M30 12l-3 10M38 12l3 10"/>',
+ pendente:'<path d="M4 4h40M24 4v12M16 24l4-8h8l4 8z"/>',
+ lustre:'<path d="M4 4h40M24 4v8M12 16q12 7 24 0M12 16v5M24 12v9M36 16v5"/><path class="ac" d="M10 24h4M22 24h4M34 24h4"/>',
+ fita:'<path d="M4 6h40M4 14h22v-4"/><path class="ac" d="M4 12h22M8 16l-2 6M16 16v6M24 16l2 6"/>',
+ arandela:'<path d="M8 2v28M8 12h5l5-5v18l-5-5H8"/><path class="ac" d="M22 9l6-4M22 23l6 4"/>',
+ tubular:'<path d="M4 4h40M10 7h28v5H10z"/><path class="ac" d="M14 15l-2 6M24 15v6M34 15l2 6"/>',
+ baliz:'<path d="M4 2v26h40M10 18h8v4h-8z"/><path class="ac" d="M12 22l-2 4M16 22l2 4"/>',
+ arJanela:'<path d="M4 2v28M44 2v28M4 8h40M4 26h40"/><path d="M14 11h20v12H14z"/><path class="ac" d="M17 14h14M17 17h14M17 20h14"/>',
+ arHiwall:'<path d="M4 2v28"/><path d="M8 6h32a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H8z"/><path class="ac" d="M12 13h26M16 20l-2 5M24 20v5M32 20l2 5"/>',
+ arPisoTeto:'<path d="M2 4h44"/><path d="M6 4h36v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/><path class="ac" d="M10 11h28M14 18l-2 6M24 18v6M34 18l2 6"/>',
+ arCassete:'<path d="M2 4h44"/><path d="M12 4v6h24V4"/><path class="ac" d="M16 7h16M14 12l-5 6M34 12l5 6M20 12l-1 6M28 12l1 6"/>',
+ arMulti:'<path d="M2 6h16v6H2zM30 6h16v6H30z"/><path d="M18 20h12v10H18z"/><path class="ac" d="M10 12v12h8M38 12v12h-8M21 23h6M21 26h6"/>',
+ arPortatil:'<path d="M2 30h44"/><path d="M16 8h14v22H16z"/><path class="ac" d="M19 12h8M19 15h8M30 14h6q6 0 6-8V2"/>',
+ arDuto:'<path d="M2 4h44M2 12h44"/><path d="M4 6h10v4H4z"/><path class="ac" d="M14 8h28M22 12v4h6v-4M36 12v4h6v-4"/><path d="M25 18l-1 5M39 18l1 5"/>',
+ tColonial:'<path d="M4 20a5 5 0 0 0 10 0a5 5 0 0 1 10 0a5 5 0 0 0 10 0a5 5 0 0 1 10 0"/>',
+ tPort:'<path d="M4 16h6q4 8 8 0h6q4 8 8 0h6q4 8 8 0"/>',
+ tRomana:'<path d="M4 22h6a5 5 0 0 1 10 0h4a5 5 0 0 1 10 0h10"/>',
+ tFrancesa:'<path d="M4 20h40M8 20v-2M14 20v-3M20 20v-2M26 20v-2M32 20v-3M38 20v-2"/>',
+ tAmer:'<path d="M4 20c6-8 8 8 13 0s7 8 13 0 7 8 14 0"/>',
+ tPlan:'<path d="M4 20h10v-4h5v4h10v-4h5v4h10"/>',
+ tConc:'<path d="M4 22h6a5 5 0 0 1 10 0h4a5 5 0 0 1 10 0h10M4 25h40"/>',
+ tFibro:'<path d="M4 18q3-6 6 0t6 0 6 0 6 0 6 0 6 0 6 0"/>',
+ tSand:'<path d="M4 14h4l2-5h4l2 5h6l2-5h4l2 5h6l2-5h4M4 22h40M4 14v8M44 9v13"/><path class="ac" d="M8 18h4M16 18h4M24 18h4M32 18h4"/>',
+ tTrap:'<path d="M4 20h4l3-7h4l3 7h6l3-7h4l3 7h6l3-7"/>',
+ tOnd:'<path d="M4 18q2-4 4 0t4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0"/>',
+ tShingle:'<path d="M4 8h40M4 16h40M4 24h40M10 8v8M22 8v8M34 8v8M16 16v8M28 16v8M40 16v8"/>',
+ tPoli:'<path class="ac" d="M4 14h40M4 20h40"/><path d="M10 14v6M24 14v6M38 14v6"/>',
+ tVidro:'<rect x="10" y="10" width="28" height="12"/><path class="ac" d="M14 14l5-3M20 18l8-6"/>',
+ tLaje:'<path d="M4 14h40v10H4z"/><path class="ac" d="M4 11h40"/>'
+};
+function svg(k){return IC[k]?`<svg class="ic" viewBox="0 0 48 32" aria-hidden="true">${IC[k]}</svg>`:"";}
+
+/* ============ CATÁLOGO ============ */
+const COLORS=[["Branco Neve","#FBFBF8"],["Branco Gelo","#F0F2EE"],["Off-white","#ECE5D6"],["Areia / Bege","#D8C5A3"],["Fendi / Greige","#BBB1A1"],["Cinza claro","#C8CBCD"],["Cinza grafite","#4A4D50"],["Preto","#1B1B1B"],["Verde","#3F7D4E"],["Verde sálvia","#9CAF94"],["Azul","#3567A6"],["Azul marinho","#1F2E4D"],["Vermelho","#B23A32"],["Terracota","#B5653F"],["Amarelo","#E2B33C"],["Rosa","#E3A9A6"],["Madeira","#9A6B43"],["Mármore branco","#E9E6E1"]];
+const LATER="Cliente decide depois";
+const STONES={"Preto São Gabriel":"#2A2B2E","Preto Absoluto":"#121212","Branco Siena":"#D9D2CB","Branco Itaúnas":"#E4DCC8","Branco Dallas":"#E6E2DC","Cinza Andorinha":"#8A8C8E","Cinza Corumbá":"#7D7A75","Verde Ubatuba":"#1F2B25","Marrom Café":"#4A3428","Amarelo Ornamental":"#D3B887","Ocre Itabira":"#B3895A"};
+const QUEM=["OBRABIT fornece","Cliente compra (só instalamos)"];
+const DQUEM={"OBRABIT fornece":"Material entra no nosso orçamento.","Cliente compra (só instalamos)":"Cliente compra o material; orçamos só a mão de obra e os insumos de assentamento."};
+
+const PISO_ON=r=>!["Regularizar contrapiso","Reparo pontual"].includes(r.acao);
+const S={
+demol:{n:"Demolição e retiradas",ask:"Tem algo para tirar, abrir ou derrubar?",f:[
+ {id:"itens",l:"O que retirar / abrir",t:"many",o:["Retirar armário","Retirar bancada","Retirar louças","Retirar box","Retirar ventilador de teto","Retirar grade da janela","Retirar tanque","Retirar portal","Abrir vão","Ampliar vão","Fechar vão","Derrubar parede","Outro"],
+  d:{"Abrir vão":"Fazer passagem nova na parede (porta, janela de serviço, integração). Precisa confirmar se a parede não é estrutural.","Ampliar vão":"Alargar ou subir uma passagem existente.","Fechar vão":"Fechar porta ou janela com tijolo ou drywall.","Derrubar parede":"Integrar ambientes. Em prédio, a parede pode ser estrutural: pedir planta ou avaliação de engenheiro.","Retirar portal":"Tirar a guarnição/batente de uma passagem para deixá-la livre."}},
+ {id:"estrutural",l:"A parede pode ser estrutural?",t:"one",o:["Não","Sim / verificar","Não sei"],w:r=>has(r.itens,["Abrir vão","Ampliar vão","Derrubar parede"]),
+  d:{"Sim / verificar":"Exige avaliação de engenheiro e autorização do condomínio antes de executar.","Não sei":"Peça a planta ao síndico. Paredes que continuam iguais em todos os andares costumam ser estruturais."}}
+]},
+piso:{n:"Piso",g:"acao",off:["Manter"],ask:"Quer trocar o piso deste ambiente?",f:[
+ {id:"acao",l:"O que fazer com o piso",t:"one",o:["Manter","Trocar (retirar o antigo)","Piso sobre piso","Regularizar contrapiso","Reparo pontual"],
+  d:{"Manter":"Não mexe no piso.","Trocar (retirar o antigo)":"Quebra o piso antigo e assenta o novo. Gera entulho e leva mais tempo, mas o nível do chão não muda.","Piso sobre piso":"Cola o piso novo por cima do antigo com argamassa própria. É mais rápido e limpo. O piso antigo precisa estar firme (sem peças ocas) e o chão sobe cerca de 1 cm, então pode ser preciso cortar portas.","Regularizar contrapiso":"Só nivelar a base, por exemplo para o cliente colocar vinílico ou laminado.","Reparo pontual":"Troca só as peças quebradas ou ocas. Só funciona se houver peça igual disponível."}},
+ {id:"tipo",l:"Tipo de piso",t:"one",req:1,o:["Porcelanato","Cerâmica","Vinílico em régua","Vinílico em manta","Laminado","Ladrilho hidráulico","Madeira","Cimento queimado","Pedra natural","Epóxi / autonivelante","Outro"],w:PISO_ON,
+  d:{"Porcelanato":"Absorve pouquíssima água e é muito resistente. Serve para qualquer ambiente e vem em peças grandes com junta fina. É o mais pedido.","Cerâmica":"Mais barata, absorve mais água e risca mais. Boa para área de serviço, garagem e obra econômica.","Vinílico em régua":"Réguas de PVC que imitam madeira. É confortável, silencioso e a instalação é rápida e limpa. Não vai em box, área externa ou lugar que se lava com balde.","Vinílico em manta":"Rolo contínuo, sem emendas. Comum em clínicas, comércio e quarto de criança.","Laminado":"Placa de MDF com acabamento de madeira, encaixada. Para quarto e sala secos, porque estufa se molhar.","Ladrilho hidráulico":"Peça de cimento colorida com desenho, estilo retrô. Precisa de impermeabilização. Há porcelanato que imita.","Madeira":"Taco ou assoalho natural. Nobre, mas precisa de manutenção (raspagem e verniz).","Cimento queimado":"Piso contínuo de cimento alisado, estilo industrial. Pode apresentar trincas.","Pedra natural":"Mármore, granito, ardósia ou pedra São Tomé. As rústicas são para área externa e piscina.","Epóxi / autonivelante":"Resina contínua, sem juntas. Para garagem, comércio ou visual moderno."}},
+ {id:"formato",l:"Tamanho da peça",t:"one",o:["60×60","80×80","90×90","120×120","60×120","Régua 20×120","Régua 20×90","45×45","20×20","Outro"],w:PISO_ON,
+  ic:{"60×60":"quad","80×80":"quad","90×90":"grande","120×120":"grande","60×120":"ret","Régua 20×120":"regua","Régua 20×90":"regua","45×45":"quad","20×20":"quad"},
+  d:{"60×60":"Tamanho mais comum e econômico; pouca perda.","90×90":"Peça grande: dá sensação de amplitude, mas exige contrapiso bem nivelado e gera mais perda.","120×120":"Peça grande: dá sensação de amplitude, mas exige contrapiso bem nivelado e gera mais perda.","60×120":"Retangular grande, visual moderno.","Régua 20×120":"Porcelanato em régua que imita madeira e pode molhar.","Régua 20×90":"Porcelanato em régua que imita madeira e pode molhar.","20×20":"Peça pequena: ladrilho hidráulico ou estilo retrô."}},
+ {id:"acab",l:"Acabamento da superfície",t:"one",o:["Polido","Acetinado","Fosco / natural","Antiderrapante","Amadeirado","Marmorizado","Cimentício"],w:PISO_ON,
+  ic:{"Polido":"brilho","Acetinado":"acet","Fosco / natural":"fosco","Antiderrapante":"antiderr","Amadeirado":"amad","Marmorizado":"marm","Cimentício":"ciment"},
+  d:{"Polido":"Brilhante e reflete a luz. Escorrega molhado, então é só para área seca (sala, quarto).","Acetinado":"Meio brilho, sofisticado e mais fácil de limpar que o fosco.","Fosco / natural":"Sem brilho e escorrega menos. Serve para tudo, inclusive banheiro e cozinha.","Antiderrapante":"Superfície áspera. Para área externa, piscina, garagem e rampa.","Amadeirado":"Porcelanato com desenho de madeira; pode molhar.","Marmorizado":"Imita mármore, com veios.","Cimentício":"Imita cimento queimado, sem as trincas."}},
+ {id:"cor",l:"Cor do piso",t:"cor",req:1,w:PISO_ON},
+ {id:"rejunte",l:"Tipo de rejunte",t:"one",o:["Cimentício","Acrílico","Epóxi"],w:PISO_ON,
+  d:{"Cimentício":"O mais comum e barato. Absorve água e escurece com o tempo. Para área seca ou obra econômica.","Acrílico":"Mais liso e flexível e mancha menos. Bom para porcelanato em área interna, inclusive banheiro.","Epóxi":"Impermeável, não mancha e resiste a produtos de limpeza. Ideal para box, cozinha e piscina. É mais caro e mais demorado de aplicar."}},
+ {id:"rejcor",l:"Cor do rejunte",t:"one",o:["Mesma cor do piso","Branco","Cinza","Grafite","Bege","Preto"],w:PISO_ON,
+  d:{"Mesma cor do piso":"A junta quase some e o piso parece contínuo.","Branco":"Fica bonito, mas escurece com o tempo em piso.","Grafite":"Disfarça a sujeira e marca o desenho das peças."}},
+ {id:"caimento",l:"Caimento para o ralo",t:"one",o:["Sim","Não"],wet:1,
+  d:{"Sim":"O piso fica levemente inclinado para a água escorrer até o ralo. Obrigatório no box e em área externa."}},
+ {id:"soleira",l:"Soleira na porta",t:"one",o:["Não","Granito preto","Granito branco","Mármore","Mesmo piso","Outro"],
+  d:{"Granito preto":"Faixa de pedra embaixo da porta que separa pisos diferentes e segura a água do banheiro.","Mesmo piso":"Sem pedra: o piso passa direto pela porta."}},
+ {id:"quem",l:"Quem compra o piso",t:"one",o:QUEM,d:DQUEM}
+]},
+revest:{n:"Revestimento de parede",g:"acao",off:["Manter","Não tem"],ask:"E as paredes, quer revestir ou trocar o revestimento?",f:[
+ {id:"acao",l:"O que fazer",t:"one",o:["Manter","Não tem","Trocar (retirar o antigo)","Revestimento sobre revestimento","Revestir onde não tem"],
+  d:{"Trocar (retirar o antigo)":"Quebra o azulejo antigo e assenta o novo.","Revestimento sobre revestimento":"Cola o novo por cima do antigo. É mais rápido, mas o antigo precisa estar firme. Tomadas, registros e caixilhos ficam mais fundos e precisam de prolongador."}},
+ {id:"area",l:"Onde vai revestimento",t:"one",req:1,o:["Só área do box","Até o teto, todas as paredes","Meia parede (até 1,20 m)","Até 1,40 m (sobre bancada)","Faixa sobre a bancada","Uma parede de destaque","Outro"],
+  d:{"Só área do box":"Reveste só o box; o resto da parede é pintado com tinta própria para banheiro. É a opção mais econômica.","Até o teto, todas as paredes":"Banheiro todo revestido. Mais caro, mais fácil de limpar.","Faixa sobre a bancada":"Só a faixa entre a bancada e o armário aéreo (cozinha).","Uma parede de destaque":"Revestimento decorativo em uma parede só."}},
+ {id:"tipo",l:"Tipo de revestimento",t:"one",req:1,o:["Porcelanato","Cerâmica","Subway / metrô","Pastilha de vidro","Pastilha cerâmica","Ladrilho hidráulico","Pedra natural","Revestimento 3D","Outro"],
+  d:{"Porcelanato":"Igual ao do piso. Em peças grandes, deixa a parede com aspecto limpo e com poucas juntas.","Cerâmica":"Econômica e ótima para parede, onde ninguém pisa.","Subway / metrô":"Peça pequena e retangular (7,5×15 ou 10×20), geralmente com borda chanfrada. Estilo clássico.","Pastilha de vidro":"Pecinhas de 2×2 cm em placas, com brilho. Usada em faixas decorativas e piscinas.","Pastilha cerâmica":"Igual à de vidro, mas fosca.","Ladrilho hidráulico":"Peça com desenho, estilo retrô.","Pedra natural":"Filetes de pedra (canjiquinha) para parede de destaque e área externa.","Revestimento 3D":"Peça com relevo. Parede de destaque na sala ou atrás da TV."}},
+ {id:"formato",l:"Formato",t:"one",o:["Retangular","Quadrado","Metrô 7,5×15","10×30","30×60","60×120","Hexagonal","Espinha de peixe","Escama / leque","Outro"],
+  ic:{"Retangular":"ret","Quadrado":"quad","Metrô 7,5×15":"metro","10×30":"longo","30×60":"ret","60×120":"grande","Hexagonal":"hex","Espinha de peixe":"espinha","Escama / leque":"escama"}},
+ {id:"pag",l:"Como assentar",t:"one",o:["Horizontal alinhado","Vertical alinhado","Amarração (tijolinho)","Espinha de peixe","Diagonal"],
+  ic:{"Horizontal alinhado":"alinH","Vertical alinhado":"alinV","Amarração (tijolinho)":"amarr","Espinha de peixe":"espinha","Diagonal":"diag"},
+  d:{"Horizontal alinhado":"Juntas alinhadas e peças deitadas: alarga o ambiente.","Vertical alinhado":"Peças em pé: o ambiente parece mais alto.","Amarração (tijolinho)":"Cada fileira começa deslocada meia peça, como tijolo.","Espinha de peixe":"Peças em zigue-zague. Muito decorativo, gera mais perda e mão de obra.","Diagonal":"A 45°. Gera mais corte e perda."}},
+ {id:"cor",l:"Cor do revestimento",t:"cor",req:1},
+ {id:"rejcor",l:"Cor do rejunte",t:"one",o:["Mesma cor","Branco","Cinza","Grafite","Preto","Contraste"]},
+ {id:"cantoneira",l:"Acabamento das quinas",t:"one",o:["Cantoneira de alumínio","Cantoneira inox","Cantoneira PVC","Meia-esquadria","Não precisa"],
+  d:{"Cantoneira de alumínio":"Perfil metálico que protege a quina do revestimento. Econômico.","Cantoneira inox":"Mais durável e com visual moderno. Não enferruja.","Cantoneira PVC":"A mais barata, porém menos durável.","Meia-esquadria":"As peças são cortadas a 45° e se encontram na quina, sem perfil. Acabamento mais nobre, com mais mão de obra."}},
+ {id:"nicho",l:"Nicho embutido",t:"one",o:["Não","1 nicho","2 nichos"],
+  d:{"1 nicho":"Recorte na parede do box para apoiar shampoo e sabonete, revestido por dentro."}},
+ {id:"nichomat",l:"Acabamento do nicho",t:"one",o:["Mesmo revestimento","Granito","Mármore","Porcelanato diferente"],w:r=>r.nicho&&r.nicho!=="Não"},
+ {id:"imper",l:"Impermeabilização",t:"one",o:["Área do box","Piso todo + 30 cm de parede","Não precisa"],wet:1,
+  d:{"Área do box":"Manta ou argamassa impermeável embaixo do revestimento, para não vazar para o vizinho de baixo. Obrigatória quando o box é refeito.","Piso todo + 30 cm de parede":"Para áreas que se lavam com água: área de serviço, varanda."}},
+ {id:"quem",l:"Quem compra o revestimento",t:"one",o:QUEM,d:DQUEM}
+]},
+pintura:{n:"Pintura",g:"acao",off:["Não pintar"],ask:"Vai pintar? Paredes, teto ou os dois?",f:[
+ {id:"acao",l:"O que pintar",t:"one",o:["Não pintar","Paredes e teto","Só paredes","Só teto","Retoque"]},
+ {id:"estado",l:"Como estão as paredes",t:"one",o:["Boas, só pintar","Pequenas imperfeições","Trincas / descascando","Mofo / umidade"],
+  d:{"Boas, só pintar":"Lixa leve e duas demãos.","Pequenas imperfeições":"Massa nos pontos com defeito e lixamento.","Trincas / descascando":"Raspagem e tratamento das trincas antes da massa.","Mofo / umidade":"Primeiro achar a causa (infiltração, vazamento). Depois tratar com fungicida e usar massa acrílica."}},
+ {id:"prep",l:"Preparação",t:"many",o:["Raspagem","Correção de trincas","Massa corrida (PVA)","Massa acrílica","Selador","Lixamento","Tratamento de mofo / umidade","Regularizar requadro de janela"],
+  d:{"Raspagem":"Tira tinta solta e descascada.","Correção de trincas":"Abre a trinca e trata com tela e selante para ela não voltar.","Massa corrida (PVA)":"Deixa a parede lisa. Só em área interna seca, porque não aguenta umidade.","Massa acrílica":"Deixa liso e resiste à umidade. Para banheiro, cozinha, área de serviço e área externa.","Selador":"Primeira demão em reboco novo ou massa, para a tinta aderir e render.","Tratamento de mofo / umidade":"Fungicida e, se preciso, impermeabilizante.","Regularizar requadro de janela":"Acerta as bordas tortas em volta da janela."}},
+ {id:"tinta",l:"Tipo de tinta",t:"one",req:1,o:["Acrílica","Látex PVA","Esmalte","Epóxi","Textura","Grafiato","Efeito cimento queimado"],
+  d:{"Acrílica":"A mais usada. Lavável e resistente à umidade. Serve para interno e externo.","Látex PVA":"Mais barata e não é lavável. Só para teto e área interna seca.","Esmalte":"Para madeira e metal: portas, batentes, grades e portões. É resistente e tem brilho.","Epóxi":"Muito resistente e impermeável. Para piso de garagem, azulejo antigo (pintar azulejo) e área de limpeza pesada.","Textura":"Tinta grossa com relevo que esconde imperfeições. Para fachada, muro e parede de destaque.","Grafiato":"Textura riscada com desempenadeira, aspecto mais rústico. Fachada e muro.","Efeito cimento queimado":"Imita parede de cimento, estilo industrial."}},
+ {id:"acab",l:"Acabamento da tinta",t:"one",req:1,o:["Fosco","Acetinado","Semibrilho","Brilho"],
+  ic:{"Fosco":"fosco","Acetinado":"acet","Semibrilho":"semi","Brilho":"brilho"},
+  d:{"Fosco":"Sem brilho, esconde imperfeições da parede, mas é pouco lavável. Ideal para teto, sala e quarto de adulto.","Acetinado":"Leve brilho e lavável. Padrão para sala, quarto e corredor, principalmente com criança ou pet.","Semibrilho":"Mais lavável. Para cozinha, banheiro, área de serviço e portas.","Brilho":"Muito lavável, mas realça defeitos da parede. Para portas, grades e rodapé (esmalte)."}},
+ {id:"linha",l:"Linha da tinta",t:"one",o:["Econômica","Standard","Premium"],
+  d:{"Econômica":"Cobre menos e precisa de mais demãos. Boa para imóvel de aluguel.","Standard":"Equilíbrio entre preço e rendimento.","Premium":"Cobre melhor, rende mais e dura mais. Indicada para cores fortes."}},
+ {id:"corpar",l:"Cor das paredes",t:"cor",req:1,w:r=>r.acao!=="Só teto"},
+ {id:"corteto",l:"Cor do teto",t:"cor",req:1,w:r=>["Paredes e teto","Só teto"].includes(r.acao)},
+ {id:"destaque",l:"Parede de destaque (outra cor)",t:"one",o:["Não","Sim"]},
+ {id:"cordest",l:"Cor da parede de destaque",t:"cor",w:r=>r.destaque==="Sim"},
+ {id:"extras",l:"Pintar também",t:"many",o:["Portas (folha e batente)","Janelas / esquadrias","Grades / portão","Rodapé","Armário existente","Teto do box / área molhada"]}
+]},
+rodape:{n:"Rodapé",g:"acao",off:["Manter"],ask:"O rodapé fica ou troca?",f:[
+ {id:"acao",l:"O que fazer",t:"one",o:["Manter","Trocar","Colocar (não tem)","Só retirar"]},
+ {id:"mat",l:"Material",t:"one",req:1,o:["Poliestireno","MDF","Mesmo piso (porcelanato)","Cerâmica","Madeira","PVC","Granito / mármore","Embutido (invertido)","Outro"],w:r=>r.acao!=="Só retirar",
+  d:{"Poliestireno":"Plástico rígido com aparência de rodapé de madeira pintado. Não apodrece, não estufa com água e é fácil de instalar. Hoje é o mais usado.","MDF":"Madeira prensada, normalmente branca. Bonito e barato, mas estufa se molhar. Não usar onde se lava o chão.","Mesmo piso (porcelanato)":"Tiras cortadas do próprio piso. Resiste à água e pode ser lavado. Bom para cozinha, área de serviço e varanda.","Cerâmica":"Econômico, para área molhada simples.","Madeira":"Nobre; combina com piso de madeira.","PVC":"Barato e tem canaleta para passar fios. Usado com vinílico e laminado.","Granito / mármore":"Para área externa, escada e hall.","Embutido (invertido)":"Fica rente ou para dentro da parede, efeito moderno de 'parede flutuando'. Precisa de mais trabalho no reboco."}},
+ {id:"alt",l:"Altura",t:"one",req:1,o:["5 cm","7 cm","10 cm","12 cm","15 cm","Outro"],w:r=>r.acao!=="Só retirar",
+  d:{"5 cm":"Discreto, moderno.","7 cm":"Padrão de apartamento.","10 cm":"Mais presença. Fica bom com pé-direito acima de 2,70 m.","15 cm":"Clássico e imponente, para pé-direito alto."}},
+ {id:"cor",l:"Cor",t:"one",o:["Branco","Mesma cor da parede","Mesma cor do piso","Madeira","Preto"],w:r=>r.acao!=="Só retirar"}
+]},
+teto:{n:"Teto / gesso",g:"acao",off:["Manter"],ask:"Quer rebaixar o teto em gesso ou mexer no forro?",f:[
+ {id:"acao",l:"O que fazer",t:"one",o:["Manter","Rebaixar em drywall","Rebaixar em gesso","Forro de PVC","Forro de madeira","Reparo no forro"],
+  ic:{"Rebaixar em drywall":"drywall","Rebaixar em gesso":"gesso","Forro de PVC":"pvc","Forro de madeira":"madeiraForro"},
+  d:{"Rebaixar em drywall":"Placas de gesso parafusadas em perfis de aço. É rápido e limpo, permite embutir spots e esconder fios e canos. Racha pouco.","Rebaixar em gesso":"Placas de gesso penduradas com arame (plaquinha 60×60 ou estucado). Mais barato, porém mais artesanal e pode trincar.","Forro de PVC":"Réguas de plástico. Barato e lavável; para área de serviço, varanda e garagem.","Forro de madeira":"Réguas de madeira; visual aconchegante ou rústico.","Reparo no forro":"Conserto de trincas, manchas ou partes caídas do forro existente."}},
+ {id:"det",l:"Detalhes no gesso",t:"many",o:["Sanca aberta (luz indireta)","Sanca fechada","Tabica","Negativo","Cortineiro","Alçapão de inspeção"],
+  ic:{"Sanca aberta (luz indireta)":"sancaAb","Sanca fechada":"sancaFe","Tabica":"tabica","Negativo":"negativo","Cortineiro":"cortineiro","Alçapão de inspeção":"alcapao"},
+  d:{"Sanca aberta (luz indireta)":"Rebaixo na borda do teto com uma abertura onde fica uma fita de LED escondida. A luz bate no teto ou na parede e fica suave, indireta.","Sanca fechada":"Rebaixo na borda do teto, fechado embaixo, onde ficam spots embutidos. Muito usado em sala para iluminar paredes e quadros.","Tabica":"Perfil metálico em L entre o forro e a parede que forma um friso fino de sombra. Dá acabamento limpo e evita trinca no encontro.","Negativo":"Rasgo ou recuo de alguns centímetros no gesso, geralmente junto à parede. Cria uma linha de sombra, visual moderno.","Cortineiro":"Vão no forro junto à janela onde o trilho da cortina fica escondido. A cortina parece sair do teto.","Alçapão de inspeção":"Tampa removível para acessar registro, caixa de passagem ou ar-condicionado acima do forro."}},
+ {id:"alt",l:"Altura final do teto (m)",t:"num",u:"m"}
+]},
+eletrica:{n:"Tomadas e interruptores",g:"acao",off:["Manter como está"],ask:"Vai trocar tomadas ou precisa de pontos novos?",f:[
+ {id:"acao",l:"Tomadas e interruptores",t:"one",o:["Manter como está","Trocar só os acabamentos","Trocar acabamentos + novos pontos","Mudar pontos de lugar","Só novos pontos"],
+  d:{"Trocar só os acabamentos":"Troca só as placas e módulos (a parte que aparece). Não mexe na parede.","Trocar acabamentos + novos pontos":"Troca as placas e abre a parede para pontos novos.","Mudar pontos de lugar":"Abre a parede, leva o ponto para outro lugar e fecha o antigo."}},
+ {id:"ntom",l:"Novos pontos de tomada",t:"num",u:"un",w:r=>/novos|lugar/i.test(r.acao||"")},
+ {id:"nint",l:"Novos interruptores",t:"num",u:"un",w:r=>/novos|lugar/i.test(r.acao||"")},
+ {id:"esp",l:"Pontos especiais",t:"many",o:["Ar-condicionado","Chuveiro elétrico","Cooktop / forno","Micro-ondas","Máquina de lavar","Geladeira","TV / rede / internet","Tomada com USB","Aquecedor","Portão eletrônico"],
+  d:{"Ar-condicionado":"Circuito próprio com disjuntor; 220 V na maioria dos aparelhos.","Chuveiro elétrico":"Fio grosso (6 mm² ou mais) e disjuntor próprio.","Cooktop / forno":"Cooktop de indução e forno elétrico precisam de circuito próprio."}},
+ {id:"linhaac",l:"Cor das placas",t:"one",o:["Branco","Preto","Cinza / grafite","Dourado","Inox","Outro"]},
+ {id:"quadro",l:"Quadro de luz",t:"one",o:["Não mexer","Novos disjuntores","Trocar quadro"],
+  d:{"Novos disjuntores":"Para os circuitos novos (ar, chuveiro, cooktop).","Trocar quadro":"Quadro antigo, com fusível ou sem espaço. Avaliar também o padrão de entrada."}},
+ {id:"fiacao",l:"Fiação",t:"one",o:["Manter","Trocar parcial","Trocar toda"],
+  d:{"Trocar toda":"Para imóveis antigos (fio de pano ou ressecado) ou com disjuntor desarmando sempre."}}
+]},
+ilum:{n:"Iluminação / luminárias",g:"acao",off:["Manter"],ask:"Quer trocar as luminárias? Que estilo de luz?",f:[
+ {id:"acao",l:"O que fazer",t:"one",o:["Manter","Trocar luminárias","Novo projeto de iluminação"],
+  d:{"Novo projeto de iluminação":"Pontos novos de luz (spots, sanca, pendentes), normalmente junto com rebaixo de gesso."}},
+ {id:"estilo",l:"Estilo das luminárias",t:"many",req:1,o:["Plafon LED de sobrepor","Plafon embutido","Spot embutido","Spot direcionável","Trilho com spots","Trilho magnético","Pendente","Lustre","Fita / perfil de LED","Arandela","Luminária tubular","Balizador","Espelho com LED"],
+  ic:{"Plafon LED de sobrepor":"plafon","Plafon embutido":"plafonEmb","Spot embutido":"spot","Spot direcionável":"spotDir","Trilho com spots":"trilho","Trilho magnético":"trilhoMag","Pendente":"pendente","Lustre":"lustre","Fita / perfil de LED":"fita","Arandela":"arandela","Luminária tubular":"tubular","Balizador":"baliz","Espelho com LED":"espLED"},
+  d:{"Plafon LED de sobrepor":"Luminária presa direto no teto. A escolha quando não há forro de gesso.","Plafon embutido":"Fica dentro do forro de gesso, rente ao teto. Precisa de gesso.","Spot embutido":"Pequeno, com luz concentrada; vários pontos no forro de gesso.","Spot direcionável":"Gira para iluminar quadro, bancada ou parede.","Trilho com spots":"Barra no teto com spots que se movem. Não precisa de gesso e tem visual moderno.","Trilho magnético":"Trilho fino embutido no gesso com módulos presos por ímã. Alto padrão.","Pendente":"Pendurado por fio, sobre mesa de jantar, ilha ou bancada.","Lustre":"Peça decorativa grande, normalmente na sala de jantar.","Fita / perfil de LED":"Luz em linha para sanca, armário, nicho e embaixo do aéreo da cozinha.","Arandela":"Luminária de parede para corredor, cabeceira e área externa.","Luminária tubular":"Comprida, luz forte; área de serviço e garagem.","Balizador":"Luz baixa na parede ou no piso para escada, jardim e corredor.","Espelho com LED":"Espelho de banheiro com luz embutida."}},
+ {id:"qtd",l:"Quantidade de pontos de luz",t:"num",u:"un"},
+ {id:"temp",l:"Cor da luz",t:"one",o:["Branco quente 3000K","Neutro 4000K","Branco frio 6500K","Ajustável (quente/frio)"],
+  d:{"Branco quente 3000K":"Luz amarelada e aconchegante. Para sala e quarto.","Neutro 4000K":"Luz branca natural. Para cozinha, banheiro e escritório.","Branco frio 6500K":"Luz azulada e forte. Para área de serviço e garagem.","Ajustável (quente/frio)":"O cliente escolhe a cor da luz no interruptor ou no controle."}},
+ {id:"corlum",l:"Cor da luminária",t:"one",o:["Branco","Preto","Dourado","Cromado","Madeira"]},
+ {id:"quem",l:"Quem compra as luminárias",t:"one",o:QUEM,d:DQUEM}
+]},
+hidraulica:{n:"Hidráulica, gás e esgoto",ask:"Precisa mudar algum ponto de água? Tem vazamento ou infiltração?",f:[
+ {id:"itens",l:"Serviços",t:"many",o:["Manter pontos","Remanejar ponto de água","Remanejar esgoto","Novo ponto de água","Ponto de máquina de lavar","Ponto de filtro","Ponto de geladeira","Novo registro","Trocar tubulação","Ralo linear","Ponto de gás","Aquecedor a gás","Mudar ducha higiênica de lado","Outro"],
+  d:{"Remanejar esgoto":"Mudar ralo ou saída do vaso de lugar. Em apartamento, pode depender do andar de baixo.","Ralo linear":"Ralo comprido e fino junto à parede do box. O piso cai para um lado só, visual moderno.","Trocar tubulação":"Para cano antigo de ferro galvanizado ou com vazamentos frequentes."}},
+ {id:"agua",l:"Água quente",t:"one",o:["Não tem","Chuveiro elétrico","Aquecedor a gás","Aquecedor elétrico (boiler)","Solar"]},
+ {id:"prob",l:"Problema relatado pelo cliente",t:"many",o:["Vazamento","Infiltração","Retorno de água / entupimento","Pouca pressão","Nenhum"]}
+]},
+loucas:{n:"Louças e metais",ask:"Vai trocar vaso, cuba, torneira ou chuveiro?",f:[
+ {id:"itens",l:"O que instalar",t:"many",o:["Vaso com caixa acoplada","Vaso com válvula","Vaso suspenso","Cuba de apoio","Cuba de embutir","Cuba de sobrepor","Lavatório de coluna","Tanque","Chuveiro elétrico","Chuveiro a gás / pressurizado","Ducha higiênica","Torneira","Misturador","Cooktop","Kit de acessórios"],
+  d:{"Vaso com caixa acoplada":"A caixa de descarga fica presa atrás do vaso. É o padrão e não precisa quebrar parede.","Vaso com válvula":"Descarga na parede (válvula Hydra). Exige cano de maior diâmetro.","Vaso suspenso":"Preso na parede, com a caixa embutida. Alto padrão; precisa de estrutura e parede falsa.","Cuba de apoio":"Fica em cima da bancada, como uma bacia. Visual decorativo.","Cuba de embutir":"Fica por baixo ou dentro da bancada. É a mais fácil de limpar.","Cuba de sobrepor":"Encaixa no buraco da bancada com a borda apoiada por cima.","Lavatório de coluna":"Pia com pé de louça, sem bancada.","Misturador":"Uma só peça mistura água quente e fria (precisa ter água quente).","Kit de acessórios":"Porta-toalha, papeleira, saboneteira e gancho."}},
+ {id:"cormet",l:"Cor dos metais",t:"one",o:["Cromado","Preto fosco","Dourado","Inox escovado","Rose gold","Grafite"]},
+ {id:"padrao",l:"Padrão",t:"one",o:["Econômico","Intermediário","Alto padrão"]},
+ {id:"quem",l:"Quem compra",t:"one",o:QUEM,d:DQUEM}
+]},
+bancada:{n:"Bancada",g:"acao",off:["Não mexer"],ask:"Bancada nova? De qual material?",f:[
+ {id:"acao",l:"O que fazer",t:"one",o:["Não mexer","Bancada nova","Trocar a existente"]},
+ {id:"mat",l:"Material",t:"one",req:1,o:["Granito natural","Quartzo","Granito sintético / marmoglass","Mármore","Nanoglass","Porcelanato","Inox","Concreto / cimento","Madeira","Outro"],
+  d:{"Granito natural":"Pedra natural, resistente a calor e risco, com melhor custo. Os claros mancham mais.","Quartzo":"Pedra industrializada (tipo Silestone): cor uniforme e não mancha. Mais cara; evitar panela quente direto.","Granito sintético / marmoglass":"Resina com pó de pedra, branco liso. Mais barato que quartzo, mas pode riscar e amarelar.","Mármore":"Nobre e bonito, mas mancha e corrói com limão e vinagre. Melhor no banheiro que na cozinha.","Nanoglass":"Vidro cristalizado, branco brilhante. Caro.","Porcelanato":"Lâmina de porcelanato colada numa base. Visual de mármore com preço menor.","Inox":"Higiênico e moderno, estilo cozinha profissional.","Concreto / cimento":"Rústico ou industrial; precisa impermeabilizar.","Madeira":"Precisa de verniz. Não indicado perto da cuba."}},
+ {id:"pedra",l:"Qual pedra",t:"one",o:["Preto São Gabriel","Preto Absoluto","Branco Siena","Branco Itaúnas","Branco Dallas","Cinza Andorinha","Cinza Corumbá","Verde Ubatuba","Marrom Café","Amarelo Ornamental","Ocre Itabira","Outro"],w:r=>["Granito natural","Mármore"].includes(r.mat),stone:1,
+  d:{"Preto São Gabriel":"Preto com pontinhos claros. O mais vendido: não mancha e tem bom preço.","Preto Absoluto":"Preto uniforme, sem pontos. Mais caro e elegante.","Branco Siena":"Fundo claro com pontos cinza e vinho. Econômico; mancha um pouco.","Branco Itaúnas":"Branco amarelado com pontos. Absorve mais, precisa de impermeabilização.","Branco Dallas":"Fundo branco com pontos pretos marcados.","Cinza Andorinha":"Cinza médio, econômico e não mancha.","Cinza Corumbá":"Cinza com grãos maiores.","Verde Ubatuba":"Verde muito escuro, quase preto. Resistente e econômico.","Marrom Café":"Marrom escuro com grãos.","Amarelo Ornamental":"Bege amarelado, clássico.","Ocre Itabira":"Ocre ou caramelo com grãos."}},
+ {id:"corsint",l:"Cor",t:"cor",w:r=>r.mat&&!["Granito natural","Mármore","Inox"].includes(r.mat)},
+ {id:"comp",l:"Comprimento (m)",t:"num",u:"m"},
+ {id:"prof",l:"Profundidade (cm)",t:"num",u:"cm"},
+ {id:"borda",l:"Acabamento da borda",t:"one",o:["Reta","Meia-esquadria 4 cm","Boleada","Chanfrada"],
+  ic:{"Reta":"bReta","Meia-esquadria 4 cm":"bMeia","Boleada":"bBol","Chanfrada":"bChanf"},
+  d:{"Reta":"Borda simples, com a espessura da própria pedra (2 cm).","Meia-esquadria 4 cm":"Uma tira de pedra colada a 45° na frente, para a bancada parecer mais grossa (4 cm ou mais). Visual mais robusto.","Boleada":"Borda arredondada. Mais segura, sem quina viva.","Chanfrada":"Quina cortada em ângulo, discreta."}},
+ {id:"front",l:"Frontispício (faixa na parede)",t:"one",o:["Não","10 cm","15 cm","Até o revestimento"],
+  d:{"10 cm":"Faixa de pedra em pé, colada na parede atrás da bancada. Protege a parede da água.","Até o revestimento":"A pedra sobe até encontrar o revestimento."}},
+ {id:"recortes",l:"Recortes",t:"many",o:["Cuba","Cooktop","Torneira de bancada","Escorredor embutido"],
+  d:{"Escorredor embutido":"Canaletas cavadas na própria pedra ao lado da cuba."}},
+ {id:"saia",l:"Saia / testeira",t:"one",o:["Não","Sim"],d:{"Sim":"Faixa de pedra que desce na frente da bancada e esconde a estrutura ou o sifão."}}
+]},
+vidro:{n:"Vidro temperado / box / espelho",ask:"Precisa de box, espelho ou divisória de vidro?",f:[
+ {id:"itens",l:"O que instalar",t:"many",o:["Box de correr","Box de abrir","Box fixo","Box até o teto","Divisória fixa","Espelho","Porta de vidro","Guarda-corpo","Janela de vidro","Outro"],
+  ic:{"Box de correr":"boxCorrer","Box de abrir":"boxAbrir","Box fixo":"boxFixo","Box até o teto":"boxTeto","Divisória fixa":"divis","Espelho":"espelho","Porta de vidro":"portaVidro","Guarda-corpo":"guarda"},
+  d:{"Box de correr":"Uma folha fixa e outra que corre no trilho. O mais comum; bom para banheiro pequeno.","Box de abrir":"Porta que abre para fora, como uma porta comum. Precisa de espaço livre na frente.","Box fixo":"Só um painel de vidro, sem porta (box aberto). Simples e fácil de limpar.","Box até o teto":"O vidro vai do piso ao teto e segura o vapor (efeito sauna). Visual alto padrão.","Divisória fixa":"Vidro parado separando ambientes, como cozinha e sala sobre a bancada.","Guarda-corpo":"Proteção de vidro em varanda ou escada."}},
+ {id:"vidro",l:"Tipo de vidro",t:"one",o:["Incolor","Fumê","Bronze","Jateado","Canelado","Espelhado"],
+  d:{"Incolor":"Transparente; o padrão.","Fumê":"Escurecido, cinza.","Jateado":"Fosco, dá privacidade.","Canelado":"Com riscos verticais em relevo. Dá privacidade e está em alta."}},
+ {id:"esp",l:"Espessura",t:"one",o:["6 mm","8 mm","10 mm"],d:{"8 mm":"Padrão para box.","10 mm":"Para porta, guarda-corpo e peças grandes."}},
+ {id:"ferr",l:"Cor das ferragens / perfil",t:"one",o:["Cromado","Preto","Dourado","Branco","Inox"]}
+]},
+esquadrias:{n:"Janelas e portas",ask:"Vai trocar alguma janela ou porta?",f:[
+ {id:"jan",l:"Janelas",t:"one",o:["Manter","Trocar","Reparar"]},
+ {id:"janmat",l:"Material da janela",t:"one",o:["Alumínio branco","Alumínio preto","Alumínio bronze","PVC","Madeira","Ferro"],w:r=>r.jan==="Trocar",
+  d:{"Alumínio branco":"O mais usado, com bom preço e sem ferrugem.","PVC":"Isola melhor som e calor. Bom para rua barulhenta.","Ferro":"Mais barato, mas enferruja e precisa de pintura."}},
+ {id:"jantipo",l:"Tipo de janela",t:"one",o:["Correr 2 folhas","Correr 4 folhas","Maxim-ar","Basculante","Camarão","Pivotante","Com veneziana"],w:r=>r.jan==="Trocar",
+  ic:{"Correr 2 folhas":"jCorrer2","Correr 4 folhas":"jCorrer4","Maxim-ar":"jMaxim","Basculante":"jBasc","Camarão":"jCamarao","Pivotante":"jPivo","Com veneziana":"jVenez"},
+  d:{"Correr 2 folhas":"Folhas que deslizam. O padrão de sala e quarto.","Correr 4 folhas":"Para vão largo; abre o meio.","Maxim-ar":"Abre para fora empurrando, articulada em cima. Ventila mesmo com chuva. Banheiro e cozinha.","Basculante":"Várias lâminas que giram juntas. Banheiro e área de serviço.","Camarão":"Folhas que dobram e abrem o vão inteiro. Varanda.","Pivotante":"Gira num eixo central. Visual moderno.","Com veneziana":"Tem lâminas que escurecem o quarto. Quarto."}},
+ {id:"janqtd",l:"Quantidade de janelas",t:"num",u:"un",w:r=>r.jan==="Trocar"},
+ {id:"porta",l:"Portas",t:"one",o:["Manter","Pintar","Trocar folha","Trocar folha e batente","Porta de correr","Porta camarão","Instalar porta (não tem)"],
+  ic:{"Porta de correr":"pCorrer","Porta camarão":"pCamarao"},
+  d:{"Trocar folha":"Troca só a porta; o batente (moldura) fica.","Trocar folha e batente":"Porta pronta com batente, também chamada de kit porta.","Porta de correr":"Corre por trilho aparente ou embutido na parede. Economiza espaço.","Porta camarão":"Dobra no meio; para despensa e área de serviço."}},
+ {id:"portaqtd",l:"Quantidade de portas",t:"num",u:"un",w:r=>r.porta&&r.porta!=="Manter"},
+ {id:"grade",l:"Grade",t:"one",o:["Não tem","Manter","Retirar","Instalar nova"]}
+]},
+ferragens:{n:"Fechaduras e maçanetas",g:"acao",off:["Manter"],ask:"Quer trocar fechadura ou maçanetas?",f:[
+ {id:"acao",l:"O que fazer",t:"one",o:["Manter","Trocar","Instalar (não tem)","Só regular / lubrificar"],
+  d:{"Manter":"Fechaduras e maçanetas ficam como estão.","Só regular / lubrificar":"Ajuste de porta que arrasta ou fechadura que emperra, sem trocar peças."}},
+ {id:"itens",l:"O que trocar",t:"many",w:r=>r.acao!=="Só regular / lubrificar",o:["Fechadura comum","Fechadura eletrônica (senha / digital)","Maçanetas","Dobradiças","Puxadores","Olho mágico","Mola aérea"],
+  d:{"Fechadura eletrônica (senha / digital)":"Abre com senha, digital, cartão ou celular. Confirmar a espessura da porta e se a porta é de entrada.","Mola aérea":"Fecha a porta sozinha, devagar."}},
+ {id:"estilo",l:"Estilo da maçaneta",t:"one",w:r=>r.acao!=="Só regular / lubrificar",o:["Alavanca","Bola","Roseta","Espelho longo"],
+  ic:{"Alavanca":"mAlav","Bola":"mBola","Roseta":"mRoseta","Espelho longo":"mEsp"},
+  d:{"Alavanca":"Maçaneta tipo alça, a mais fácil de abrir.","Bola":"Maçaneta redonda que se gira; visual retrô.","Roseta":"Alavanca com base redonda pequena, separada da chave. Moderna e discreta.","Espelho longo":"Placa comprida com a maçaneta e o furo da chave juntos. Clássica."}},
+ {id:"cor",l:"Acabamento",t:"one",w:r=>r.acao!=="Só regular / lubrificar",o:["Cromado","Inox","Preto","Dourado","Bronze"]},
+ {id:"qtd",l:"Quantidade",t:"num",u:"un"}
+]},
+moveis:{n:"Móveis / marcenaria",ask:"Vai querer armário ou móvel planejado aqui?",f:[
+ {id:"itens",l:"Móveis",t:"many",o:["Armário aéreo","Armário inferior","Gabinete de banheiro","Guarda-roupa","Closet","Painel de TV","Rack","Nichos / prateleiras","Bancada de estudo","Cabeceira","Ilha / península","Torre quente","Outro"],
+  d:{"Torre quente":"Armário alto onde ficam embutidos o forno e o micro-ondas.","Ilha / península":"Bancada solta no meio da cozinha (ilha) ou presa numa ponta (península)."}},
+ {id:"formato",l:"Formato",t:"one",o:["Linear","Em L","Em U","Com ilha"],ic:{"Linear":"fLin","Em L":"fL","Em U":"fU","Com ilha":"fIlha"}},
+ {id:"mat",l:"Material",t:"one",o:["MDF","MDP","Compensado naval","Madeira maciça","Alvenaria + granito"],
+  d:{"MDF":"Chapa de madeira prensada com acabamento. O padrão dos planejados; aceita usinagem e pintura.","MDP":"Chapa de partículas, mais barata. Boa para caixaria e prateleira, menos para porta.","Compensado naval":"Resiste à umidade. Para banheiro e área externa.","Madeira maciça":"Nobre e mais cara.","Alvenaria + granito":"Estrutura de tijolo com tampo de pedra e portas de alumínio ou MDF. Econômico e não estraga com água."}},
+ {id:"acab",l:"Acabamento / cor",t:"one",o:["Branco","Amadeirado","Fendi / greige","Preto","Laca","Outro"],
+  d:{"Laca":"Pintura lisa automotiva, brilhante ou fosca. Alto padrão."}},
+ {id:"portas",l:"Portas e puxadores",t:"one",o:["Lisas","Ripadas","Vidro com alumínio","Puxador cava","Puxador perfil","Fecho toque"],
+  ic:{"Lisas":"pLisa","Ripadas":"pRip","Vidro com alumínio":"pVidro","Puxador cava":"pCava","Puxador perfil":"pPerfil","Fecho toque":"pToque"},
+  d:{"Ripadas":"Frente com ripas verticais, em alta.","Puxador cava":"Rasgo na própria porta, sem puxador aparente.","Puxador perfil":"Perfil de alumínio contínuo na borda da porta.","Fecho toque":"Abre empurrando; sem puxador."}},
+ {id:"quem",l:"Quem faz",t:"one",o:["OBRABIT","Marceneiro do cliente","Fica para depois"]}
+]},
+ar:{n:"Ar-condicionado",g:"acao",off:["Não","Manter o aparelho que tem"],ask:"Vai ter ar-condicionado neste ambiente?",f:[
+ {id:"acao",l:"Ar-condicionado",t:"one",o:["Não","Manter o aparelho que tem","Só preparação (ponto + furação)","Instalação completa","Trocar aparelho","Só retirar o antigo"],
+  d:{"Manter o aparelho que tem":"O aparelho fica; só protegemos durante a obra.","Só preparação (ponto + furação)":"Deixamos o ponto elétrico e o furo prontos; o técnico do cliente instala o aparelho.","Instalação completa":"Inclui tubulação de cobre, dreno, suporte e ligação do aparelho.","Trocar aparelho":"Retira o antigo e instala o novo. Ex.: trocar ar de janela por split.","Só retirar o antigo":"Remove o aparelho; ver se precisa fechar o vão na parede."}},
+ {id:"existe",l:"Aparelho que tem hoje",t:"one",o:["Não tem","Janela (de parede)","Split","Outro"]},
+ {id:"tipo",l:"Tipo do aparelho novo",t:"one",w:r=>!["Não","Manter o aparelho que tem","Só retirar o antigo"].includes(r.acao),
+  o:["Janela (de parede)","Split hi-wall","Split piso-teto","Split cassete","Multi-split","Portátil","Duto (central)","Cliente decide depois"],
+  ic:{"Janela (de parede)":"arJanela","Split hi-wall":"arHiwall","Split piso-teto":"arPisoTeto","Split cassete":"arCassete","Multi-split":"arMulti","Portátil":"arPortatil","Duto (central)":"arDuto"},
+  d:{"Janela (de parede)":"O \"quadrado\": aparelho único encaixado num vão da parede. Mais barato, mais barulhento.","Split hi-wall":"O split comum: evaporadora na parede, no alto, e condensadora do lado de fora. Silencioso.","Split piso-teto":"Evaporadora grande no teto ou no rodapé da parede. Para salas grandes e lojas.","Split cassete":"Embutido no forro de gesso, sopra para 4 lados. Precisa de teto rebaixado.","Multi-split":"Uma condensadora lá fora alimenta 2 ou 3 evaporadoras. Bom quando há pouco espaço na fachada.","Portátil":"Aparelho com rodinhas e mangueira na janela. Sem obra.","Duto (central)":"Aparelho escondido no forro, ar distribuído por dutos e grelhas. Precisa de bastante rebaixo."}},
+ {id:"tec",l:"Tecnologia",t:"one",o:["Inverter","Convencional","Não sei"],w:r=>r.tipo&&r.tipo!=="Cliente decide depois",
+  d:{"Inverter":"Ajusta a velocidade do motor: gasta bem menos energia e é mais silencioso. Um pouco mais caro.","Convencional":"Liga e desliga o compressor. Mais barato para comprar, gasta mais luz."}},
+ {id:"fecharvao",l:"Fechar vão do ar de janela",t:"one",o:["Não precisa","Fechar com alvenaria","Fechar e colocar vidro / veneziana"],w:r=>r.existe==="Janela (de parede)"&&r.acao!=="Manter o aparelho que tem"},
+ {id:"qtd",l:"Quantos aparelhos",t:"num",u:"un"},
+ {id:"dist",l:"Distância entre aparelho e condensadora",t:"num",u:"m",w:r=>/split|Duto/i.test(r.tipo||"")},
+ {id:"cond",l:"Onde fica a condensadora",t:"one",o:["Fachada","Varanda","Área técnica / telhado","Laje / terraço","Não sei"],w:r=>/split|Duto/i.test(r.tipo||"")},
+ {id:"btu",l:"Potência",t:"one",w:r=>r.acao!=="Só retirar o antigo",o:["9.000 BTUs","12.000 BTUs","18.000 BTUs","24.000 BTUs","Não sei"],
+  d:{"9.000 BTUs":"Até cerca de 12 m² (quarto pequeno).","12.000 BTUs":"Até cerca de 20 m².","18.000 BTUs":"Até cerca de 30 m².","24.000 BTUs":"Até cerca de 40 m². Some mais se o ambiente recebe sol da tarde."}},
+ {id:"caixa",l:"Caixa / caixonete",t:"one",w:r=>r.acao!=="Só retirar o antigo",o:["Não","Caixonete de mármore","Caixonete de granito","Caixa de dreno"],
+  d:{"Caixonete de mármore":"Caixa de pedra na fachada para apoiar a condensadora (exigida por muitos prédios).","Caixa de dreno":"Caixa embutida na parede para ligar o dreno à tubulação de esgoto."}}
+]},
+telhado:{n:"Telhado",g:"serv",off:[],ask:"O que precisa fazer no telhado?",f:[
+ {id:"serv",l:"Serviço",t:"one",req:1,o:["Troca total","Troca parcial","Revisão / manutenção","Reparo de goteiras","Telhado novo (onde não tem)"],
+  d:{"Revisão / manutenção":"Troca telhas quebradas, limpa calhas e revisa a vedação.","Troca total":"Retira telhas (e estrutura, se preciso) e faz tudo novo."}},
+ {id:"atual",l:"Telha atual",t:"one",o:["Colonial cerâmica","Portuguesa","Romana","Francesa","Concreto","Fibrocimento","Metálica","Sanduíche","Policarbonato","Laje","Não tem"]},
+ {id:"nova",l:"Telha nova",t:"one",req:1,o:["Colonial cerâmica","Portuguesa","Romana","Francesa","Americana","Plan","Concreto","Fibrocimento","Sanduíche (termoacústica)","Metálica trapezoidal","Metálica ondulada","Shingle","Policarbonato","Telha de vidro","Laje impermeabilizada","Outro"],w:r=>["Troca total","Troca parcial","Telhado novo (onde não tem)"].includes(r.serv),
+  ic:{"Colonial cerâmica":"tColonial","Portuguesa":"tPort","Romana":"tRomana","Francesa":"tFrancesa","Americana":"tAmer","Plan":"tPlan","Concreto":"tConc","Fibrocimento":"tFibro","Sanduíche (termoacústica)":"tSand","Metálica trapezoidal":"tTrap","Metálica ondulada":"tOnd","Shingle":"tShingle","Policarbonato":"tPoli","Telha de vidro":"tVidro","Laje impermeabilizada":"tLaje"},
+  d:{"Colonial cerâmica":"Telha curva de barro em capa e canal, a tradicional. Pesada; pede inclinação de 25 a 30% ou mais.","Portuguesa":"Cerâmica com encaixe, ondulada. Veda melhor que a colonial.","Romana":"Cerâmica com encaixe e perfil mais reto. Visual moderno.","Francesa":"Cerâmica plana com frisos e encaixe.","Americana":"Cerâmica com perfil em S e encaixe; veda bem.","Plan":"Cerâmica plana em capa e canal; visual reto.","Concreto":"Formato das cerâmicas, mas de concreto. Mais pesada e durável, com várias cores.","Fibrocimento":"Placa ondulada cinza (Brasilit/Eternit). Barata e leve, mas esquenta muito. Para garagem, edícula e área de serviço.","Sanduíche (termoacústica)":"Duas chapas de metal com isopor ou poliuretano no meio. Isola calor e barulho de chuva e aceita pouca inclinação (5%).","Metálica trapezoidal":"Chapa de aço galvanizado ou galvalume. Barata e rápida, mas quente e barulhenta sem manta. Para garagem e galpão.","Metálica ondulada":"Igual à trapezoidal, com ondas arredondadas.","Shingle":"Placas asfálticas, estilo americano. Precisam de base de OSB e inclinação alta.","Policarbonato":"Plástico transparente ou fumê. Para cobertura de área, pergolado e entrada de luz.","Telha de vidro":"Peça de vidro no meio das cerâmicas para entrar luz.","Laje impermeabilizada":"Laje com manta asfáltica e proteção mecânica, sem telha."}},
+ {id:"cortelha",l:"Cor da telha",t:"one",o:["Natural (cerâmica)","Esmaltada","Branca","Cinza","Preta","Vermelha","Verde"]},
+ {id:"estr",l:"Estrutura (madeiramento)",t:"one",o:["Manter","Reforçar madeira","Madeira nova","Metálica (aço)","Alumínio","Concreto"],
+  d:{"Manter":"Estrutura em bom estado, sem cupim ou podridão.","Metálica (aço)":"Resistente e vence vãos maiores. Precisa de pintura anticorrosiva.","Alumínio":"Leve e não enferruja; boa para telha sanduíche e metálica."}},
+ {id:"extras",l:"Itens do telhado",t:"many",o:["Calha","Rufo","Contra-rufo","Cumeeira","Manta térmica / subcobertura","Forro","Beiral","Pingadeira","Impermeabilização","Pintura da telha"],
+  d:{"Calha":"Canaleta que recolhe a água da chuva na beira do telhado.","Rufo":"Chapa dobrada no encontro do telhado com a parede, para não infiltrar.","Contra-rufo":"Chapa embutida na parede, por cima do rufo.","Cumeeira":"Peça que fecha o topo, onde as águas do telhado se encontram.","Manta térmica / subcobertura":"Manta aluminizada embaixo das telhas. Reduz o calor e segura goteiras.","Beiral":"Prolongamento do telhado para fora da parede; protege a fachada.","Pingadeira":"Peça no topo do muro ou parapeito para a água pingar para fora e não escorrer pela parede."}},
+ {id:"calhamat",l:"Material da calha",t:"one",o:["Galvanizada","Alumínio","PVC","Cobre"],w:r=>has(r.extras,["Calha"])},
+ {id:"calham",l:"Metros de calha",t:"num",u:"m",w:r=>has(r.extras,["Calha"])}
+]}
+};
+
+const ROOMS={
+"Sala":["demol","piso","rodape","pintura","teto","eletrica","ilum","esquadrias","ferragens","moveis","ar"],
+"Quarto":["demol","piso","rodape","pintura","teto","eletrica","ilum","esquadrias","ferragens","moveis","ar"],
+"Suíte":["demol","piso","rodape","pintura","teto","eletrica","ilum","esquadrias","ferragens","moveis","ar"],
+"Banheiro":["demol","piso","revest","pintura","teto","hidraulica","loucas","bancada","vidro","eletrica","ilum","esquadrias","ferragens","moveis"],
+"Lavabo":["demol","piso","revest","pintura","teto","hidraulica","loucas","bancada","vidro","eletrica","ilum","ferragens","moveis"],
+"Cozinha":["demol","piso","revest","pintura","teto","hidraulica","loucas","bancada","vidro","eletrica","ilum","esquadrias","moveis"],
+"Área de serviço":["demol","piso","revest","pintura","teto","hidraulica","loucas","bancada","eletrica","ilum","esquadrias","moveis"],
+"Corredor":["demol","piso","rodape","pintura","teto","eletrica","ilum","moveis"],
+"Escritório":["demol","piso","rodape","pintura","teto","eletrica","ilum","esquadrias","ferragens","moveis","ar"],
+"Varanda":["demol","piso","revest","pintura","teto","hidraulica","eletrica","ilum","vidro","esquadrias"],
+"Área externa":["demol","piso","revest","pintura","hidraulica","eletrica","ilum","vidro"],
+"Garagem":["demol","piso","pintura","teto","eletrica","ilum","esquadrias"],
+"Fachada / muro":["pintura","revest","esquadrias","ilum"],
+"Telhado":["telhado"],
+"Outro":Object.keys(S)
+};
+const WET=["Banheiro","Lavabo","Cozinha","Área de serviço","Varanda","Área externa"];
+
+const GERAL=[
+ {id:"imovel",l:"Tipo de imóvel",t:"one",o:["Apartamento","Casa","Casa em condomínio","Sala comercial","Loja"]},
+ {id:"idade",l:"Idade aproximada do imóvel",t:"one",o:["Até 10 anos","10 a 30 anos","Mais de 30 anos","Não sabe"],d:{"Mais de 30 anos":"Atenção a fiação, tubulação de ferro e contrapiso. Há mais chance de surpresas ao quebrar."}},
+ {id:"mora",l:"Cliente mora no imóvel durante a obra?",t:"one",o:["Sim","Não","Parcialmente"],d:{"Sim":"Planejar etapas por ambiente, proteção extra e limpeza diária."}},
+ {id:"cond",l:"Regras do condomínio",t:"many",o:["Horário restrito de obra","Precisa de autorização / ART","Elevador de serviço","Proibido caçamba na rua","Precisa de lista de funcionários","Sem restrição"]},
+ {id:"horario",l:"Horário permitido",t:"txt",ph:"Ex.: seg a sex, 8h às 17h"},
+ {id:"acesso",l:"Acesso e logística",t:"many",o:["Garagem / vaga para descarga","Escada (sem elevador)","Rua estreita","Precisa de chave com porteiro"]},
+ {id:"inicio",l:"Quando o cliente quer começar",t:"txt",ph:"Ex.: depois de 15/11"},
+ {id:"prazo",l:"Prazo que o cliente espera",t:"txt",ph:"Ex.: pronto até o Natal"},
+ {id:"verba",l:"Quanto o cliente pensa em investir",t:"txt",ph:"Ex.: até R$ 40 mil"},
+ {id:"prioridade",l:"O que pesa mais para o cliente",t:"one",o:["Preço","Prazo","Acabamento / qualidade","Tudo igual"]},
+ {id:"origem",l:"Como conheceu a OBRABIT",t:"one",o:["Instagram","Indicação","Google","Cliente antigo","Outro"]},
+ {id:"ocultas",l:"Problemas que o cliente relatou (infiltração, retorno de água, trincas…)",t:"area"},
+ {id:"notas",l:"Anotações gerais da visita",t:"area"}
+];
+
+/* ============ UTIL ============ */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const has=(a,list)=>Array.isArray(a)&&a.some(x=>list.includes(x));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const num=v=>{if(v==null||v==="")return NaN;const s=String(v);return parseFloat(s.indexOf(",")>=0?s.replace(/\./g,"").replace(",","."):s);};
+const fmt=(n,d=2)=>isFinite(n)?n.toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d}):"—";
+const empty=v=>v==null||v===""||(Array.isArray(v)&&!v.length);
+function val(r,id){const v=r[id];if(empty(v))return "";const o=x=>x==="Outro"?(r[id+"_outro"]||"outro"):x;return Array.isArray(v)?v.map(o).join(", "):o(v);}
+function corv(r,id){const n=r[id]||"",ref=r[id+"_ref"]||"";return n&&ref?`${n} (${ref})`:(n||ref);}
+const lc=s=>s?s.charAt(0).toLowerCase()+s.slice(1):s;
+
+/* ============ ESTADO / ARMAZENAMENTO ============ */
+const LS="obrabit_visitas_v1";
+let visits={};
+let ui={screen:"home",vid:null,tab:"cliente",rid:null,openSec:{},guide:{},confirmDel:null};
+let db=null,syncState="local",inflight={},dirty={},unsub=null,fbOn=false;
+const userEmail=()=>{try{return fbOn&&firebase.auth().currentUser?firebase.auth().currentUser.email||"":"";}catch(e){return "";}};
+function loadLocal(){try{const raw=localStorage.getItem(LS);if(raw)visits=JSON.parse(raw)||{};}catch(e){}}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(visits));}catch(e){}}
+function newVisit(){const v={id:uid(),criado:new Date().toISOString(),atualizado:Date.now(),status:"rascunho",autor:userEmail(),
+ cliente:{nome:"",tel:"",cpf:"",email:"",end:"",bairro:"",cidade:"Rio de Janeiro/RJ",cep:"",pd:"2,70"},geral:{},ambientes:[]};visits[v.id]=v;return v;}
+let saveT=null;
+function touch(v){v.atualizado=Date.now();saveLocal();clearTimeout(saveT);saveT=setTimeout(()=>pushRemote(v.id),700);setSync(db?"pending":"local");}
+async function pushRemote(id){if(!db)return;if(!navigator.onLine){setSync("off");}const v=visits[id];if(!v)return;
+ if(inflight[id]){dirty[id]=true;return;}
+ inflight[id]=true;
+ try{await db.collection("visitas").doc(id).set(JSON.parse(JSON.stringify(v)));setSync("ok");}
+ catch(e){setSync(e&&e.code==="quota_exceeded"?"bad":"pending");}
+ inflight[id]=false;if(dirty[id]){dirty[id]=false;pushRemote(id);}}
+function setSync(s){syncState=s;const el=$("#sync");if(el)el.innerHTML=syncHTML();}
+function syncHTML(){const m={local:["","Salvo neste aparelho"],pending:["warn","Enviando…"],ok:["ok","Salvo na nuvem"],bad:["bad","Erro ao salvar na nuvem"],off:["warn","Sem conexão: salvo no aparelho"]}[syncState]||["","Salvo"];
+ return `<span class="dot ${m[0]}" title="${m[1]}"></span><span class="lbl2">${m[1]}</span>`;}
+function initDb(){
+ const cfg=window.FIREBASE_CONFIG;
+ if(!cfg||!cfg.apiKey||/^COLE/.test(cfg.apiKey)||!window.firebase){setSync("local");return;}
+ fbOn=true;ui.screen="boot";render();
+ setTimeout(()=>{if(ui.screen==="boot"){ui.screen="login";render();}},5000);
+ try{firebase.initializeApp(cfg);}catch(e){}
+ const fdb=firebase.firestore();
+ fdb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+ firebase.auth().onAuthStateChanged(u=>{
+  if(unsub){unsub();unsub=null;}
+  if(!u){db=null;ui={screen:"login",vid:null,tab:"cliente",rid:null,openSec:{},guide:{},confirmDel:null};render();return;}
+  db=fdb;if(ui.screen==="login"||ui.screen==="boot")ui.screen="home";render();listen();});
+}
+function listen(){
+ let timer=setTimeout(()=>setSync("off"),10000);
+ unsub=db.collection("visitas").onSnapshot({includeMetadataChanges:true},snap=>{
+  if(!snap.metadata.fromCache){clearTimeout(timer);if(!Object.values(inflight).some(Boolean))setSync("ok");}else if(!navigator.onLine)setSync("off");
+  let changed=false;const remoteIds=new Set();
+  snap.docs.forEach(d=>{remoteIds.add(d.id);const r=d.data();if(!r)return;const l=visits[d.id];
+   if(!l||(r.atualizado||0)>(l.atualizado||0)){visits[d.id]=JSON.parse(JSON.stringify(r));changed=true;}});
+  if(!snap.metadata.fromCache)Object.keys(visits).forEach(id=>{const r=snap.docs.find(d=>d.id===id);if(!remoteIds.has(id)||((r.data()||{}).atualizado||0)<(visits[id].atualizado||0))pushRemote(id);});
+  if(changed){saveLocal();if(!isTyping())render();}
+ },e=>{clearTimeout(timer);setSync("bad");});
+}
+function isTyping(){const a=document.activeElement;return a&&(a.tagName==="INPUT"||a.tagName==="TEXTAREA");}
+
+/* ============ CÁLCULOS ============ */
+function pdOf(v){const n=num(v.cliente.pd);return isFinite(n)?n:2.7;}
+function calc(room,v){const m=room.med||{};const c=num(m.c),l=num(m.l);const h=isFinite(num(m.h))?num(m.h):pdOf(v);
+ if(room.tipo==="Telhado"){const i=num(m.incl);let a=isFinite(num(m.area))?num(m.area):(c*l);if(isFinite(i)&&!isFinite(num(m.area)))a=a*Math.sqrt(1+Math.pow(i/100,2));return {area:a,proj:c*l};}
+ const area=isFinite(num(m.area))?num(m.area):c*l;
+ const per=isFinite(num(m.per))?num(m.per):2*(c+l);
+ const vaos=isFinite(num(m.vaos))?num(m.vaos):0;
+ return {area,per,h,par:per*h-vaos};}
+
+/* ============ PROGRESSO / PENDÊNCIAS ============ */
+function visibleFields(sec,r,room){return sec.f.filter(f=>{if(sec.g&&f.id!==sec.g){if(empty(r[sec.g])||sec.off.includes(r[sec.g]))return false;}
+ if(f.wet&&!WET.includes(room.tipo))return false;if(f.w&&!f.w(r))return false;return true;});}
+function secActive(sid,r){const sec=S[sid];if(!r)return false;
+ if(sec.g)return !empty(r[sec.g])&&!sec.off.includes(r[sec.g]);
+ return Object.keys(r).some(k=>!k.endsWith("_outro")&&!k.endsWith("_ref")&&k!=="obs"&&!empty(r[k])&&!(Array.isArray(r[k])&&r[k].length===1&&["Manter pontos","Nenhum"].includes(r[k][0])));}
+function secTouched(r){return r&&Object.keys(r).some(k=>!empty(r[k]));}
+function roomProgress(room){const secs=ROOMS[room.tipo]||[];let t=secs.length+1,d=0;
+ const m=room.med||{};if((num(m.c)&&num(m.l))||num(m.area))d++;
+ secs.forEach(s=>{if(secTouched(room.resp[s]))d++;});return {d,t};}
+function pendencias(v){const p=[];const c=v.cliente;
+ if(!c.nome)p.push("Nome do cliente");if(!c.tel)p.push("Telefone do cliente");if(!c.end)p.push("Endereço da obra");
+ if(!v.ambientes.length)p.push("Nenhum ambiente cadastrado");
+ v.ambientes.forEach(room=>{const m=room.med||{};
+  if(!((num(m.c)&&num(m.l))||num(m.area)))p.push(`${room.nome}: medidas`);
+  const secs=ROOMS[room.tipo]||[];const asked=secs.filter(s=>secTouched(room.resp[s])).length;
+  if(room.tipo!=="Outro"&&asked<secs.length)p.push(`${room.nome}: ${secs.length-asked} item(ns) não perguntado(s)`);
+  secs.forEach(sid=>{const r=room.resp[sid];if(!secActive(sid,r))return;
+   visibleFields(S[sid],r,room).forEach(f=>{if(f.req&&empty(r[f.id])&&empty(r[f.id+"_ref"]))p.push(`${room.nome} · ${S[sid].n}: ${lc(f.l)}`);});});});
+ return p;}
+
+/* ============ RENDER ============ */
+const app=$("#app");
+function render(){
+ if(ui.screen==="boot"){app.innerHTML=topbar("Visita técnica","OBRABIT","")+`<main class="wrap"><p class="muted" style="margin-top:32px;text-align:center">Abrindo…</p></main>`;return;}
+ if(ui.screen==="login")return renderLogin();
+ if(ui.screen==="home")return renderHome();
+ const v=visits[ui.vid];if(!v||v.apagado){ui.screen="home";return renderHome();}
+ if(ui.screen==="room")return renderRoom(v);
+ if(ui.screen==="doc")return renderDoc(v);
+ renderVisit(v);}
+function renderLogin(){
+ app.innerHTML=topbar("Visita técnica","OBRABIT","")+`<main class="wrap"><form class="card stack" id="login" style="margin-top:24px" novalidate>
+ <h2>Entrar</h2><p class="muted" style="margin:0">Use o e-mail e a senha cadastrados para você. Depois do primeiro acesso o app lembra de você.</p>
+ <div class="field"><label class="lbl" for="lg-e">E-mail</label><input id="lg-e" type="email" autocomplete="username" inputmode="email"></div>
+ <div class="field"><label class="lbl" for="lg-p">Senha</label><input id="lg-p" type="password" autocomplete="current-password"></div>
+ <p id="lg-err" class="small" role="alert" style="color:var(--bad);margin:0"></p>
+ <button class="btn pri block" type="submit">Entrar</button>
+ <button class="linkbtn" type="button" data-act="esqueci">Esqueci a senha</button></form></main>`;}
+function topbar(title,sub,back,tabs){return `<header class="top"><div class="in">
+ <div class="toprow">${back?`<button class="iconbtn" data-act="${back}" aria-label="Voltar">←</button>`:""}
+ <div class="t"><span class="eyebrow">${esc(sub)}</span><b>${esc(title)}</b></div>
+ <div class="sync" id="sync">${syncHTML()}</div></div>${tabs||""}<div class="spacer"></div></div></header>`;}
+
+function renderHome(){
+ const list=Object.values(visits).filter(v=>!v.apagado).sort((a,b)=>(b.atualizado||0)-(a.atualizado||0));
+ const em=userEmail();
+ app.innerHTML=topbar("Visitas técnicas","OBRABIT · particular","")+
+ `<main class="wrap"><section class="hero"><h1>Levantamento de visita</h1>
+ <p>Pergunte ambiente por ambiente, toque nas opções e anote as medidas. Cada opção técnica tem um botão “O que é?” para mostrar a diferença ao cliente.</p></section>
+ <div class="stack"><button class="btn pri block" data-act="new">+ Nova visita</button>
+ ${list.length?list.map(v=>{const k=pendencias(v).length;return `<button class="vcard" data-act="open" data-id="${v.id}">
+  <div class="row" style="justify-content:space-between"><span class="nm">${esc(v.cliente.nome||"Cliente sem nome")}</span>
+  ${v.exemplo?`<span class="pill ex">Exemplo</span>`:v.status==="concluida"?`<span class="pill done">Concluída</span>`:`<span class="pill draft">Em andamento</span>`}</div>
+  <div class="muted small" style="margin-top:4px">${esc(v.cliente.end||"Endereço não informado")}${v.cliente.bairro?" · "+esc(v.cliente.bairro):""}</div>
+  <div class="small" style="margin-top:8px">${new Date(v.criado).toLocaleDateString("pt-BR")} · ${v.ambientes.length} ambiente${v.ambientes.length===1?"":"s"}${v.status==="concluida"?"":k?` · <b style="color:var(--warn)">${k} pendência${k>1?"s":""}</b>`:" · completo"}${v.autor?` · ${esc(v.autor.split("@")[0])}`:""}</div></button>`;}).join("")
+ :`<div class="empty"><h3>Nenhuma visita ainda</h3><p class="muted">Toque em <b>Nova visita</b> quando chegar no cliente. Tudo fica salvo enquanto você preenche, mesmo sem internet.</p></div>`}
+ ${em?`<p class="small muted who">Conectado como ${esc(em)} · <button class="linkbtn" data-act="sair">Sair</button></p>`:""}
+ </div></main>`;}
+
+function fieldText(f,r){if(f.t==="cor")return corv(r,f.id);const x=val(r,f.id);if(!x)return "";return f.t==="num"&&f.u?`${x} ${f.u}`:x;}
+function renderDoc(v){const c=v.cliente;const g=v.geral||{};
+ const rows=(list,r)=>list.map(f=>{const t=fieldText(f,r);return t?`<dt>${esc(f.l)}</dt><dd>${esc(t)}</dd>`:"";}).join("");
+ const rooms=v.ambientes.map(room=>{const k=calc(room,v);const m=room.med||{};
+  const med=room.tipo==="Telhado"?`Área do telhado ${fmt(k.area)} m²${m.incl?` · inclinação ${esc(m.incl)}%`:""}${m.aguas?` · ${esc(m.aguas)} águas`:""}`
+   :`${m.c&&m.l?`${esc(m.c)} × ${esc(m.l)} m · `:""}piso ${fmt(k.area)} m² · perímetro ${fmt(k.per)} m · paredes ${fmt(k.par)} m² (pé-direito ${fmt(k.h)} m)`;
+  const secs=(ROOMS[room.tipo]||[]).map(sid=>{const r=room.resp[sid];if(!secTouched(r))return "";const S0=S[sid];
+   if(!secActive(sid,r))return `<div class="sh">${esc(S0.n)}: <span class="muted">${esc(S0.g?r[S0.g]||"sem serviço":"sem serviço")}</span></div>`;
+   return `<div class="sh">${esc(S0.n)}</div><dl class="kv">${rows(visibleFields(S0,r,room),r)}${r.obs?`<dt>Observação</dt><dd>${esc(r.obs)}</dd>`:""}</dl>`;}).join("");
+  const nao=(ROOMS[room.tipo]||[]).filter(sid=>!secTouched(room.resp[sid])).map(s=>S[s].n);
+  return `<div class="rm"><h3>${esc(room.nome)}</h3><div class="small mono">${med}</div>${secs}
+   ${room.obs?`<div class="sh">Anotações</div><p style="margin:0">${esc(room.obs)}</p>`:""}
+   ${nao.length?`<p class="small muted" style="margin:0">Não perguntado: ${esc(nao.join(", "))}</p>`:""}</div>`;}).join("");
+ app.innerHTML=topbar(c.nome||"Cliente","Levantamento da visita","fechar")+
+ `<main class="wrap"><div class="card stack doc" style="margin-top:16px">
+ <div><span class="eyebrow">OBRABIT · levantamento de visita</span><h2>${esc(c.nome||"Cliente")}</h2></div>
+ <dl class="kv"><dt>Cliente</dt><dd>${esc(c.nome||"—")}</dd><dt>Telefone</dt><dd>${esc(c.tel||"—")}</dd>${c.email?`<dt>E-mail</dt><dd>${esc(c.email)}</dd>`:""}${c.cpf?`<dt>CPF</dt><dd>${esc(c.cpf)}</dd>`:""}
+ <dt>Endereço</dt><dd>${esc([c.end,c.bairro,c.cidade,c.cep].filter(Boolean).join(" · ")||"—")}</dd>
+ <dt>Data da visita</dt><dd>${new Date(v.criado).toLocaleDateString("pt-BR")}</dd>${v.autor?`<dt>Visitado por</dt><dd>${esc(v.autor)}</dd>`:""}</dl>
+ ${rows(GERAL,g)?`<div class="sh">Imóvel e cliente</div><dl class="kv">${rows(GERAL,g)}</dl>`:""}
+ ${rooms||`<p class="muted">Nenhum ambiente cadastrado.</p>`}</div>
+ <div class="spacer"></div><button class="btn block" data-act="fechar">← Voltar para a visita</button></main>`;}
+
+function renderVisit(v){
+ const p=pendencias(v).length;
+ const tabs=`<nav class="tabs" role="tablist">${[["cliente","Cliente"],["ambientes","Ambientes"],["fechar","Fechar visita"]].map(([k,l])=>`<button role="tab" aria-selected="${ui.tab===k}" data-act="tab" data-tab="${k}">${l}${k==="ambientes"&&v.ambientes.length?` <span class="muted">${v.ambientes.length}</span>`:""}${k==="fechar"&&p?`<span class="badge">${p}</span>`:""}</button>`).join("")}</nav>`;
+ const body=ui.tab==="cliente"?tabCliente(v):ui.tab==="ambientes"?tabAmbientes(v):tabFechar(v);
+ app.innerHTML=topbar(v.cliente.nome||"Nova visita","Visita · "+new Date(v.criado).toLocaleDateString("pt-BR"),"home",tabs)+`<main class="wrap"><div class="spacer"></div><div class="spacer"></div>${body}</main>`;}
+
+function inp(path,label,value,opts={}){const id="f-"+path.replace(/\W/g,"_");
+ return `<div class="field"><label class="lbl" for="${id}">${esc(label)}</label>${opts.area?`<textarea id="${id}" data-bind="${path}" placeholder="${esc(opts.ph||"")}">${esc(value)}</textarea>`:`<input id="${id}" data-bind="${path}" value="${esc(value)}" ${opts.mode?`inputmode="${opts.mode}"`:""} placeholder="${esc(opts.ph||"")}" ${opts.type?`type="${opts.type}"`:""} autocomplete="off">`}</div>`;}
+
+function tabCliente(v){const c=v.cliente;
+ return `<div class="stack"><div class="card stack"><h2>Dados do cliente</h2>
+ ${inp("cliente.nome","Nome completo",c.nome,{ph:"Ex.: Selma Almeida"})}
+ <div class="grid2">${inp("cliente.tel","Telefone / WhatsApp",c.tel,{mode:"tel",ph:"(21) 9…"})}${inp("cliente.cpf","CPF (se já tiver)",c.cpf,{mode:"numeric",ph:"000.000.000-00"})}</div>
+ ${inp("cliente.email","E-mail",c.email,{type:"email"})}</div>
+ <div class="card stack"><h2>Local da obra</h2>
+ ${inp("cliente.end","Endereço (rua, número, apto)",c.end,{ph:"Ex.: Rua do Catete, 116, apto 204"})}
+ <div class="grid2">${inp("cliente.bairro","Bairro",c.bairro)}${inp("cliente.cep","CEP",c.cep,{mode:"numeric"})}</div>
+ <div class="grid2">${inp("cliente.cidade","Cidade",c.cidade)}${inp("cliente.pd","Pé-direito padrão (m)",c.pd,{mode:"decimal",ph:"2,70"})}</div>
+ <p class="muted small" style="margin:0">Pé-direito é a altura do piso ao teto. Ele entra no cálculo das paredes de todos os ambientes e pode ser mudado por ambiente.</p></div>
+ <button class="btn pri block" data-act="tab" data-tab="ambientes">Próximo: ambientes →</button></div>`;}
+
+function tabAmbientes(v){
+ return `<div class="stack">
+ ${v.ambientes.map(room=>{const pr=roomProgress(room);const c=calc(room,v);const act=(ROOMS[room.tipo]||[]).filter(s=>secActive(s,room.resp[s])).map(s=>S[s].n);
+  return `<button class="roomcard" data-act="room" data-rid="${room.id}"><div class="grow"><div class="nm">${esc(room.nome)}</div>
+  <div class="meta">${isFinite(c.area)&&c.area>0?`<span class="mono">${fmt(c.area)} m²</span> · `:`<b style="color:var(--warn)">sem medidas</b> · `}${act.length?esc(act.join(", ")):"nada marcado ainda"}</div>
+  <div class="prog"><i style="width:${Math.round(pr.d/pr.t*100)}%"></i></div></div><span aria-hidden="true">›</span></button>`;}).join("")}
+ ${!v.ambientes.length?`<div class="empty"><h3>Quais ambientes vamos reformar?</h3><p class="muted">Escolha abaixo. Cada ambiente traz só as perguntas que fazem sentido para ele.</p></div>`:""}
+ <div class="card stack"><h3>Adicionar ambiente</h3><div class="typegrid">${Object.keys(ROOMS).map(t=>`<button data-act="addroom" data-type="${esc(t)}">${esc(t)}</button>`).join("")}</div></div>
+ ${v.ambientes.length?`<button class="btn pri block" data-act="tab" data-tab="fechar">Próximo: fechar visita →</button>`:""}</div>`;}
+
+function optVisual(f,o){
+ if(f.t==="cor"){const h=(COLORS.find(c=>c[0]===o)||[])[1];return h?`<span class="sw" style="background:${h}"></span>`:"";}
+ if(f.stone&&STONES[o])return `<span class="sw stone" style="background:${STONES[o]}"></span>`;
+ if(f.ic&&f.ic[o])return svg(f.ic[o]);return "";}
+function chipsHTML(path,f,cur){const sel=x=>Array.isArray(cur)?cur.includes(x):cur===x;
+ const opts=f.t==="cor"?COLORS.map(c=>c[0]).concat([LATER]):f.o;const mode=f.t==="cor"?"one":f.t;
+ return `<div class="chips">${opts.map(o=>{const vis=optVisual(f,o);return `<button class="chip${vis&&vis.startsWith("<svg")?" hasic":""}${o===LATER?" later":""}" aria-pressed="${sel(o)}" data-act="pick" data-path="${path}" data-v="${esc(o)}" data-mode="${mode}">${vis}${esc(o)}</button>`;}).join("")}</div>`;}
+function guideHTML(f){return `<div class="guide">${f.o.filter(o=>f.d[o]).map(o=>`<div class="gi"><span class="gv">${optVisual(f,o)}</span><div><b>${esc(o)}</b>${esc(f.d[o])}</div></div>`).join("")}</div>`;}
+function hintHTML(f,cur){if(!f.d)return "";const sel=(Array.isArray(cur)?cur:[cur]).filter(x=>x&&f.d[x]);if(!sel.length)return "";
+ return sel.map(x=>`<p class="hint"><b>${esc(x)}:</b> ${esc(f.d[x])}</p>`).join("");}
+
+function fieldHTML(base,f,r){const path=base+"."+f.id;const cur=r[f.id];const gk=path;
+ const canGuide=f.d&&Object.keys(f.d).length>1;
+ let h=`<div class="field"><div class="fl">${esc(f.l)}${f.req&&empty(cur)&&empty(r[f.id+"_ref"])?`<span class="req">importante</span>`:""}${canGuide?`<button class="infobtn" data-act="guide" data-g="${gk}" aria-expanded="${!!ui.guide[gk]}">O que é?</button>`:""}</div>`;
+ if(canGuide&&ui.guide[gk])h+=guideHTML(f);
+ if(f.t==="one"||f.t==="many"||f.t==="cor")h+=chipsHTML(path,f,cur);
+ if(!ui.guide[gk])h+=hintHTML(f,cur);
+ if(f.t==="cor")h+=`<input data-bind="${path}_ref" value="${esc(r[f.id+"_ref"]||"")}" placeholder="Código ou referência (ex.: Suvinil Cerração)" aria-label="Referência da cor">`;
+ if((f.t==="one"&&cur==="Outro")||(f.t==="many"&&Array.isArray(cur)&&cur.includes("Outro")))h+=`<input data-bind="${path}_outro" value="${esc(r[f.id+"_outro"]||"")}" placeholder="Descreva" aria-label="Outro: descreva">`;
+ if(f.t==="num")h+=`<div class="numrow"><input class="mono" data-bind="${path}" value="${esc(cur||"")}" inputmode="decimal" aria-label="${esc(f.l)}"><span class="muted">${esc(f.u||"")}</span></div>`;
+ if(f.t==="txt")h+=`<input data-bind="${path}" value="${esc(cur||"")}" placeholder="${esc(f.ph||"")}" aria-label="${esc(f.l)}">`;
+ if(f.t==="date")h+=`<input type="date" data-bind="${path}" value="${esc(cur||"")}" aria-label="${esc(f.l)}" style="max-width:220px">`;
+ if(f.t==="area")h+=`<textarea data-bind="${path}" aria-label="${esc(f.l)}">${esc(cur||"")}</textarea>`;
+ return h+"</div>";}
+
+function secStatus(sid,r){const sec=S[sid];if(!secTouched(r))return {t:"não perguntado",on:false};
+ if(sec.g&&sec.off.includes(r[sec.g]))return {t:r[sec.g],on:false};
+ if(!secActive(sid,r))return {t:"sem serviço",on:false};
+ const bits=sec.f.map(f=>f.t==="cor"?corv(r,f.id):val(r,f.id)).filter(Boolean);return {t:bits.slice(0,3).join(" · "),on:true};}
+
+function sectionHTML(room,sid){const sec=S[sid];room.resp[sid]=room.resp[sid]||{};const r=room.resp[sid];const st=secStatus(sid,r);
+ const open=ui.openSec[room.id+sid];const base=`room.${sid}`;const active=!sec.g||(!empty(r[sec.g])&&!sec.off.includes(r[sec.g]));
+ return `<details class="sec" data-sec="${sid}" ${open?"open":""}><summary data-act="toggle" data-sid="${sid}"><span class="sn">${esc(sec.n)}</span><span class="st ${st.on?"on":""}">${esc(st.t)}</span></summary>
+ <div class="secbody">${sec.ask?`<p class="ask">Pergunte: “${esc(sec.ask)}”</p>`:""}${visibleFields(sec,r,room).map(f=>fieldHTML(base,f,r)).join("")}
+ ${active?`<div class="field"><div class="fl">Observação</div><input data-bind="${base}.obs" value="${esc(r.obs||"")}" placeholder="Algum detalhe que o cliente pediu"></div>`:""}</div></details>`;}
+
+function renderRoom(v){const room=v.ambientes.find(x=>x.id===ui.rid);if(!room){ui.screen="visit";return renderVisit(v);}
+ const m=room.med||(room.med={});const tel=room.tipo==="Telhado";
+ app.innerHTML=topbar(room.nome,(v.cliente.nome||"Visita")+" · "+room.tipo,"visit")+
+ `<main class="wrap"><div class="spacer"></div><div class="stack" style="margin-top:12px">
+ <div class="card stack">${inp("roomname","Nome do ambiente",room.nome)}
+ <div class="med"><h3>Medidas</h3>
+  <div class="grid3">${inp("med.c","Comprimento (m)",m.c||"",{mode:"decimal"})}${inp("med.l","Largura (m)",m.l||"",{mode:"decimal"})}${tel?inp("med.incl","Inclinação (%)",m.incl||"",{mode:"decimal",ph:"30"}):inp("med.h","Pé-direito (m)",m.h||"",{mode:"decimal",ph:v.cliente.pd||"2,70"})}</div>
+  <div class="grid3">${inp("med.area",tel?"Área total (m²) se já souber":"Área do piso (m²) se irregular",m.area||"",{mode:"decimal"})}${tel?inp("med.aguas","Nº de águas",m.aguas||"",{mode:"numeric"}):inp("med.per","Perímetro (m) se irregular",m.per||"",{mode:"decimal"})+inp("med.vaos","Descontar vãos (m²)",m.vaos||"",{mode:"decimal",ph:"0"})}</div>
+  <div class="calc" id="calc">${calcHTML(room,v)}</div>
+  ${tel?`<p class="small muted" style="margin:0">Inclinação mínima usual: colonial 30%, cerâmica de encaixe 25–30%, fibrocimento 10–15%, sanduíche e metálica 5–10%.</p>`:`<p class="small muted" style="margin:0">Ambiente em L ou irregular: some as áreas e informe no campo de área e perímetro.</p>`}</div></div>
+ ${(ROOMS[room.tipo]||[]).map(sid=>sectionHTML(room,sid)).join("")}
+ <div class="card">${inp("roomobs","Anotações deste ambiente",room.obs||"",{area:1,ph:"Ex.: cliente quer estilo industrial; mandou referências no WhatsApp"})}</div>
+ <button class="btn pri block" data-act="visit">Concluir ambiente</button>
+ ${ui.confirmDel===room.id?`<div class="confirm"><span>Excluir <b>${esc(room.nome)}</b> e tudo que foi marcado?</span><button class="btn danger" data-act="delroom2">Excluir</button><button class="btn" data-act="cancelDel">Cancelar</button></div>`:`<button class="btn danger block" data-act="delroom">Excluir ambiente</button>`}
+ </div></main>`;}
+
+function calcHTML(room,v){const c=calc(room,v);
+ if(room.tipo==="Telhado")return `<div><span>Projeção</span><b>${fmt(c.proj)} m²</b></div><div><span>Área do telhado</span><b>${fmt(c.area)} m²</b></div><div><span>Com perda 10%</span><b>${fmt(c.area*1.1)} m²</b></div>`;
+ return `<div><span>Piso / teto</span><b>${fmt(c.area)} m²</b></div><div><span>Perímetro / rodapé</span><b>${fmt(c.per)} m</b></div><div><span>Paredes</span><b>${fmt(c.par)} m²</b></div>`;}
+
+function tabFechar(v){const g=v.geral||(v.geral={});const p=pendencias(v);
+ return `<div class="stack">
+ <div class="card stack"><h2>Imóvel e condomínio</h2>${GERAL.slice(0,6).map(f=>fieldHTML("geral",f,g)).join("")}</div>
+ <div class="card stack"><h2>Expectativas do cliente</h2>${GERAL.slice(6,11).map(f=>fieldHTML("geral",f,g)).join("")}</div>
+ <div class="card stack"><h2>Anotações</h2>${GERAL.slice(11).map(f=>fieldHTML("geral",f,g)).join("")}</div>
+ ${p.length?`<div class="pend"><b>Antes de sair da casa do cliente, confira:</b><ul>${p.slice(0,40).map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:`<div class="donebox"><b style="color:var(--ok)">Levantamento completo.</b> <span class="muted">Tudo o que o orçamento precisa foi coletado.</span></div>`}
+ ${v.status==="concluida"?`<div class="donebox"><b style="color:var(--ok)">Visita concluída.</b> <span class="muted">Os dados estão salvos e disponíveis para quem for montar o orçamento.</span></div><button class="btn pri block" data-act="doc">Ver levantamento completo</button><button class="btn block" data-act="reabrir">Reabrir para editar</button>`:`<button class="btn pri block" data-act="concluir">Concluir visita e enviar para orçamento</button>`}
+ ${ui.confirmDel==="visit"?`<div class="confirm"><span>Excluir esta visita de vez?</span><button class="btn danger" data-act="delvisit2">Excluir</button><button class="btn" data-act="cancelDel">Cancelar</button></div>`:`<button class="btn danger" data-act="delvisit">Excluir visita</button>`}
+ </div>`;}
+
+/* ============ EVENTOS ============ */
+function cur(){return visits[ui.vid];}
+function curRoom(){const v=cur();return v&&v.ambientes.find(x=>x.id===ui.rid);}
+function resolve(path){const v=cur();const [head,...rest]=path.split(".");
+ if(head==="room"){const room=curRoom();const sid=rest[0];room.resp[sid]=room.resp[sid]||{};return [room.resp[sid],rest[1]];}
+ if(head==="med"){const room=curRoom();room.med=room.med||{};return [room.med,rest[0]];}
+ if(head==="roomname")return [curRoom(),"nome"];
+ if(head==="roomobs")return [curRoom(),"obs"];
+ if(head==="geral"){v.geral=v.geral||{};return [v.geral,rest[0]];}
+ return [v[head],rest[0]];}
+let toastT;function toast(t){let el=$(".toast");if(!el){el=document.createElement("div");el.className="toast";el.setAttribute("role","status");document.body.appendChild(el);}el.textContent=t;clearTimeout(toastT);toastT=setTimeout(()=>el.remove(),2200);}
+function rerenderBlock(el){const det=el.closest("details.sec");
+ if(det){const sid=det.dataset.sec;const room=curRoom();const y=det.getBoundingClientRect().top;const tmp=document.createElement("div");tmp.innerHTML=sectionHTML(room,sid);const nd=tmp.firstElementChild;nd.open=true;ui.openSec[room.id+sid]=true;det.replaceWith(nd);
+  const dy=nd.getBoundingClientRect().top-y;if(dy)scrollBy(0,dy);}
+ else{const y=scrollY;render();scrollTo(0,y);}}
+
+app.addEventListener("input",e=>{const b=e.target.dataset.bind;if(!b)return;const v=cur();if(!v)return;const [o,k]=resolve(b);o[k]=e.target.value;touch(v);
+ if(b.startsWith("med.")){const c=$("#calc");if(c)c.innerHTML=calcHTML(curRoom(),v);}
+ if(b==="roomname"||b==="cliente.nome"){const t=$(".toprow .t b");if(t)t.textContent=e.target.value||"Nova visita";}});
+app.addEventListener("submit",async e=>{if(e.target.id!=="login")return;e.preventDefault();
+ const em=$("#lg-e").value.trim(),pw=$("#lg-p").value;const er=$("#lg-err");er.style.color="";er.textContent="Entrando…";
+ try{await firebase.auth().signInWithEmailAndPassword(em,pw);}
+ catch(x){const m={"auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"E-mail ou senha incorretos.","auth/user-not-found":"E-mail ou senha incorretos.","auth/invalid-email":"E-mail inválido.","auth/missing-password":"Digite a senha.","auth/too-many-requests":"Muitas tentativas. Espere alguns minutos.","auth/network-request-failed":"Sem internet. O primeiro acesso precisa de conexão."};
+  er.textContent=m[x.code]||("Não foi possível entrar ("+x.code+").");}});
+app.addEventListener("click",e=>{const el=e.target.closest("[data-act]");if(!el)return;const a=el.dataset.act;const v=cur();
+ if(a==="toggle"){e.preventDefault();const room=curRoom();const key=room.id+el.dataset.sid;ui.openSec[key]=!ui.openSec[key];el.parentElement.open=ui.openSec[key];return;}
+ if(a==="guide"){ui.guide[el.dataset.g]=!ui.guide[el.dataset.g];rerenderBlock(el);return;}
+ if(a==="new"){const nv=newVisit();touch(nv);ui={...ui,screen:"visit",vid:nv.id,tab:"cliente",confirmDel:null};render();scrollTo(0,0);return;}
+ if(a==="open"){ui.screen="visit";ui.vid=el.dataset.id;ui.tab="ambientes";ui.confirmDel=null;render();scrollTo(0,0);return;}
+ if(a==="home"){ui.screen="home";ui.confirmDel=null;render();scrollTo(0,0);return;}
+ if(a==="visit"){ui.screen="visit";ui.tab="ambientes";ui.confirmDel=null;render();scrollTo(0,0);return;}
+ if(a==="tab"){ui.tab=el.dataset.tab;ui.confirmDel=null;render();scrollTo(0,0);return;}
+ if(a==="addroom"){const t=el.dataset.type;const same=v.ambientes.filter(x=>x.tipo===t).length;
+  const room={id:uid(),tipo:t,nome:same?`${t} ${same+1}`:t,med:{},resp:{},obs:""};v.ambientes.push(room);touch(v);
+  ui.screen="room";ui.rid=room.id;ui.openSec={};const secs=ROOMS[t];ui.openSec[room.id+(secs.includes("piso")?"piso":secs[0])]=true;render();scrollTo(0,0);return;}
+ if(a==="room"){ui.screen="room";ui.rid=el.dataset.rid;ui.confirmDel=null;render();scrollTo(0,0);return;}
+ if(a==="pick"){const [o,k]=resolve(el.dataset.path);const val=el.dataset.v;
+  if(el.dataset.mode==="many"){const arr=Array.isArray(o[k])?o[k].slice():[];const i=arr.indexOf(val);if(i>=0)arr.splice(i,1);else arr.push(val);o[k]=arr;}
+  else o[k]=o[k]===val?"":val;
+  touch(v);rerenderBlock(el);return;}
+ if(a==="delroom"){ui.confirmDel=ui.rid;render();return;}
+ if(a==="delroom2"){v.ambientes=v.ambientes.filter(x=>x.id!==ui.rid);touch(v);ui.screen="visit";ui.tab="ambientes";ui.confirmDel=null;render();toast("Ambiente excluído");return;}
+ if(a==="cancelDel"){ui.confirmDel=null;render();return;}
+ if(a==="delvisit"){ui.confirmDel="visit";render();return;}
+ if(a==="delvisit2"){const id=v.id;visits[id]={id,apagado:true,atualizado:Date.now()};saveLocal();pushRemote(id);ui={screen:"home",vid:null,tab:"cliente",rid:null,openSec:{},guide:{},confirmDel:null};render();toast("Visita excluída");return;}
+ if(a==="concluir"){v.status="concluida";v.concluida=new Date().toISOString();touch(v);render();scrollTo(0,0);toast("Visita concluída e salva");return;}
+ if(a==="reabrir"){v.status="rascunho";touch(v);render();return;}
+ if(a==="doc"){ui.screen="doc";render();scrollTo(0,0);return;}
+ if(a==="fechar"){ui.screen="visit";ui.tab="fechar";render();scrollTo(0,0);return;}
+ if(a==="sair"){firebase.auth().signOut();return;}
+ if(a==="esqueci"){const em=($("#lg-e")||{}).value||"";const er=$("#lg-err");if(!em.trim()){er.textContent="Digite seu e-mail acima e toque de novo em “Esqueci a senha”.";return;}
+  firebase.auth().sendPasswordResetEmail(em.trim()).then(()=>{er.style.color="var(--ok)";er.textContent="Enviamos um link para criar nova senha em "+em.trim()+".";}).catch(()=>{er.textContent="Não foi possível enviar. Confira o e-mail.";});return;}
+});
+
+loadLocal();render();initDb();
+if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>
