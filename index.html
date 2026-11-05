@@ -3,14 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Visita OBRABIT</title>
-<meta name="theme-color" content="#18212A">
+<title>OBRABIT Visita</title>
+<meta name="theme-color" content="#1D5FA8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131B23" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Visita OBRABIT">
+<meta name="apple-mobile-web-app-title" content="OBRABIT Visita">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -161,6 +162,96 @@ details.sec[open]>summary::after{transform:rotate(-135deg)}
 .doc .sh{font-weight:600;font-size:.95rem;margin:4px 0 2px}
 .linkbtn{border:0;background:none;color:var(--accent);text-decoration:underline;padding:6px 4px;font-weight:600}
 .who{text-align:center;margin:8px 0 0}
+
+/* ===== VISUAL DE APP (celular): barra superior colorida, abas embaixo, toques grandes ===== */
+:root{--bar:#1D5FA8;--bar-ink:#FFFFFF;--bar-soft:rgba(255,255,255,.72);--r:14px;--shadow:0 1px 2px rgba(16,22,28,.06),0 2px 10px rgba(16,22,28,.06);--nav-h:64px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bar:#131B23;--bar-ink:#E6ECF1;--bar-soft:#97A5B1;--shadow:none}}
+:root[data-theme="dark"]{--bar:#131B23;--bar-ink:#E6ECF1;--bar-soft:#97A5B1;--shadow:none}
+html{-webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%}
+body{font-size:17px;overscroll-behavior-y:none}
+body::before{background:var(--bar)}
+button,.chip,summary{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+input,textarea{font-size:17px;min-height:50px;border-radius:12px;padding:12px 14px}
+textarea{min-height:90px}
+.wrap{padding-bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+
+/* barra superior */
+.top{background:var(--bar);color:var(--bar-ink);border-bottom:0;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.top .in{padding-block:8px 6px}
+.top .spacer{display:none}
+.toprow{min-height:48px}
+.toprow .t b{font-size:1.32rem;color:var(--bar-ink)}
+.top .eyebrow{color:var(--bar-soft);letter-spacing:.08em;font-size:.74rem}
+.top .iconbtn{background:transparent;border:0;color:var(--bar-ink);min-width:44px;height:44px;border-radius:50%;margin-left:-8px}
+.top .iconbtn:active{background:rgba(255,255,255,.18)}
+.top .iconbtn svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.top .sync{color:var(--bar-soft)}
+.top .dot{box-shadow:0 0 0 2px var(--bar)}
+.brand{display:flex;align-items:center;gap:10px}
+.brand img{width:34px;height:34px;border-radius:9px;flex:none}
+
+/* abas embaixo */
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);box-shadow:0 -2px 10px rgba(0,0,0,.06)}
+.bnav button{flex:1;border:0;background:none;height:var(--nav-h);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:.78rem;font-weight:600;color:var(--muted);position:relative}
+.bnav button svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bnav button[aria-selected="true"]{color:var(--accent)}
+.bnav button[aria-selected="true"] .pillbg{background:var(--accent-soft)}
+.bnav .pillbg{display:grid;place-items:center;width:58px;height:30px;border-radius:15px}
+.bnav .badge{position:absolute;top:6px;left:calc(50% + 10px);margin:0}
+
+/* botão de ação fixo */
+.actionbar{position:fixed;left:0;right:0;z-index:5;bottom:0;padding:10px max(16px,env(safe-area-inset-left,0px)) calc(10px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--bg) 70%,transparent)}
+.actionbar.nav{bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));padding-bottom:10px}
+.actionbar .btn{width:100%;max-width:728px;margin:0 auto;display:flex}
+.fab{position:fixed;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));z-index:6;border:0;background:var(--accent);color:var(--accent-ink);height:58px;padding:0 22px 0 18px;border-radius:18px;font-weight:700;font-size:1.02rem;display:flex;align-items:center;gap:10px;box-shadow:0 6px 18px rgba(29,95,168,.35)}
+.fab svg{width:24px;height:24px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
+.btn{min-height:52px;border-radius:14px;font-size:1.02rem}
+.btn:active,.fab:active,.vcard:active,.roomcard:active,.typegrid button:active,.chip:active{transform:scale(.98)}
+
+/* cartões */
+.card,.vcard,.roomcard,details.sec{border-radius:var(--r);box-shadow:var(--shadow)}
+@media (prefers-color-scheme: light){.card,.vcard,.roomcard,details.sec{border-color:transparent}}
+.vcard{padding:16px 16px 14px}
+.vcard .nm{font-size:1.4rem}
+.roomcard{padding:16px;min-height:76px}
+.roomcard>span[aria-hidden]{font-size:1.6rem;color:var(--muted)}
+
+/* início */
+.greet{padding:20px 2px 6px}
+.greet h1{font-size:1.75rem}
+.greet p{margin:4px 0 0;color:var(--muted)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--surface);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:12px 14px}
+@media (prefers-color-scheme: light){.stat{border-color:transparent}}
+.stat b{display:block;font-family:var(--f-display);font-size:1.9rem;line-height:1}
+.stat span{font-size:.84rem;color:var(--muted)}
+.listh{font-family:var(--f-display);font-weight:700;font-size:1.1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin:6px 2px -4px}
+
+/* opções em blocos grandes, fáceis de tocar */
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px}
+.chip{border-radius:12px;min-height:52px;padding:10px 34px 10px 12px;font-size:.98rem;position:relative;justify-content:flex-start;background:var(--surface)}
+.chip.hasic{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 12px;border-radius:12px}
+.chip.hasic svg.ic{width:52px;height:35px}
+.chip[aria-pressed="true"]::after{content:"";position:absolute;top:50%;right:11px;width:15px;height:8px;margin-top:-6px;border-left:2.6px solid currentColor;border-bottom:2.6px solid currentColor;transform:rotate(-45deg)}
+.chip.hasic[aria-pressed="true"]::after{top:18px}
+.field .fl{font-size:1rem}
+.hint{font-size:.92rem;border-radius:10px;padding:10px 12px}
+.numrow input{max-width:170px}
+
+/* seções do ambiente */
+details.sec>summary{min-height:62px;padding:14px 16px}
+details.sec>summary .sn{font-size:1.24rem}
+details.sec>summary .st{font-size:.82rem}
+details.sec>summary .st.on{background:color-mix(in srgb,var(--ok) 14%,transparent);padding:3px 9px;border-radius:999px}
+.secbody{gap:22px}
+
+/* tipos de ambiente */
+.typegrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.typegrid button{border-radius:14px;min-height:60px;display:flex;align-items:center;gap:10px;font-size:1rem;background:var(--sunk);border-color:transparent}
+.typegrid button::before{content:"+";font-size:1.3rem;font-weight:700;color:var(--accent);width:28px;height:28px;border-radius:50%;background:var(--surface);display:grid;place-items:center;flex:none}
+.med{border-radius:var(--r)}
+@media (max-width:440px){.med .grid3{grid-template-columns:1fr 1fr}.calc{grid-template-columns:1fr 1fr 1fr}.calc b{font-size:.98rem}}
+.toast{bottom:calc(150px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion:no-preference){.chip,.tabs button{transition:background .12s,border-color .12s,color .12s}}
 </style>
 </head>
@@ -639,7 +730,7 @@ function pendencias(v){const p=[];const c=v.cliente;
 /* ============ RENDER ============ */
 const app=$("#app");
 function render(){
- if(ui.screen==="boot"){app.innerHTML=topbar("Visita técnica","OBRABIT","")+`<main class="wrap"><p class="muted" style="margin-top:32px;text-align:center">Abrindo…</p></main>`;return;}
+ if(ui.screen==="boot"){app.innerHTML=topbar("OBRABIT Visita","Visita técnica","")+`<main class="wrap"><p class="muted" style="margin-top:32px;text-align:center">Abrindo…</p></main>`;return;}
  if(ui.screen==="login")return renderLogin();
  if(ui.screen==="home")return renderHome();
  const v=visits[ui.vid];if(!v||v.apagado){ui.screen="home";return renderHome();}
@@ -647,7 +738,7 @@ function render(){
  if(ui.screen==="doc")return renderDoc(v);
  renderVisit(v);}
 function renderLogin(){
- app.innerHTML=topbar("Visita técnica","OBRABIT","")+`<main class="wrap"><form class="card stack" id="login" style="margin-top:24px" novalidate>
+ app.innerHTML=topbar("OBRABIT Visita","Visita técnica","")+`<main class="wrap"><form class="card stack" id="login" style="margin-top:24px" novalidate>
  <h2>Entrar</h2><p class="muted" style="margin:0">Use o e-mail e a senha cadastrados para você. Depois do primeiro acesso o app lembra de você.</p>
  <div class="field"><label class="lbl" for="lg-e">E-mail</label><input id="lg-e" type="email" autocomplete="username" inputmode="email"></div>
  <div class="field"><label class="lbl" for="lg-p">Senha</label><input id="lg-p" type="password" autocomplete="current-password"></div>
@@ -655,17 +746,17 @@ function renderLogin(){
  <button class="btn pri block" type="submit">Entrar</button>
  <button class="linkbtn" type="button" data-act="esqueci">Esqueci a senha</button></form></main>`;}
 function topbar(title,sub,back,tabs){return `<header class="top"><div class="in">
- <div class="toprow">${back?`<button class="iconbtn" data-act="${back}" aria-label="Voltar">←</button>`:""}
+ <div class="toprow">${back?`<button class="iconbtn" data-act="${back}" aria-label="Voltar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>`:""}
  <div class="t"><span class="eyebrow">${esc(sub)}</span><b>${esc(title)}</b></div>
  <div class="sync" id="sync">${syncHTML()}</div></div>${tabs||""}<div class="spacer"></div></div></header>`;}
 
 function renderHome(){
  const list=Object.values(visits).filter(v=>!v.apagado).sort((a,b)=>(b.atualizado||0)-(a.atualizado||0));
  const em=userEmail();
- app.innerHTML=topbar("Visitas técnicas","OBRABIT · particular","")+
- `<main class="wrap"><section class="hero"><h1>Levantamento de visita</h1>
- <p>Pergunte ambiente por ambiente, toque nas opções e anote as medidas. Cada opção técnica tem um botão “O que é?” para mostrar a diferença ao cliente.</p></section>
- <div class="stack"><button class="btn pri block" data-act="new">+ Nova visita</button>
+ const nAnd=list.filter(v=>v.status!=="concluida").length,nOk=list.length-nAnd;
+ app.innerHTML=`<header class="top"><div class="in"><div class="toprow"><div class="t brand"><img src="icon-192.png" alt=""><span><span class="eyebrow">Visita técnica</span><b>OBRABIT Visita</b></span></div><div class="sync" id="sync">${syncHTML()}</div></div></div></header>`+
+ `<main class="wrap"><section class="greet"><h1>Visitas</h1><p>Toque numa visita para continuar ou em <b>Nova visita</b> quando chegar no cliente.</p></section>
+ <div class="stack">${list.length?`<div class="stats"><div class="stat"><b>${nAnd}</b><span>em andamento</span></div><div class="stat"><b>${nOk}</b><span>prontas p/ orçamento</span></div></div><div class="listh">Recentes</div>`:""}
  ${list.length?list.map(v=>{const k=pendencias(v).length;return `<button class="vcard" data-act="open" data-id="${v.id}">
   <div class="row" style="justify-content:space-between"><span class="nm">${esc(v.cliente.nome||"Cliente sem nome")}</span>
   ${v.exemplo?`<span class="pill ex">Exemplo</span>`:v.status==="concluida"?`<span class="pill done">Concluída</span>`:`<span class="pill draft">Em andamento</span>`}</div>
@@ -673,7 +764,7 @@ function renderHome(){
   <div class="small" style="margin-top:8px">${new Date(v.criado).toLocaleDateString("pt-BR")} · ${v.ambientes.length} ambiente${v.ambientes.length===1?"":"s"}${v.status==="concluida"?"":k?` · <b style="color:var(--warn)">${k} pendência${k>1?"s":""}</b>`:" · completo"}${v.autor?` · ${esc(v.autor.split("@")[0])}`:""}</div></button>`;}).join("")
  :`<div class="empty"><h3>Nenhuma visita ainda</h3><p class="muted">Toque em <b>Nova visita</b> quando chegar no cliente. Tudo fica salvo enquanto você preenche, mesmo sem internet.</p></div>`}
  ${em?`<p class="small muted who">Conectado como ${esc(em)} · <button class="linkbtn" data-act="sair">Sair</button></p>`:""}
- </div></main>`;}
+ </div></main><button class="fab" data-act="new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Nova visita</button>`;}
 
 function fieldText(f,r){if(f.t==="cor")return corv(r,f.id);const x=val(r,f.id);if(!x)return "";return f.t==="num"&&f.u?`${x} ${f.u}`:x;}
 function renderDoc(v){const c=v.cliente;const g=v.geral||{};
@@ -700,9 +791,10 @@ function renderDoc(v){const c=v.cliente;const g=v.geral||{};
 
 function renderVisit(v){
  const p=pendencias(v).length;
- const tabs=`<nav class="tabs" role="tablist">${[["cliente","Cliente"],["ambientes","Ambientes"],["fechar","Fechar visita"]].map(([k,l])=>`<button role="tab" aria-selected="${ui.tab===k}" data-act="tab" data-tab="${k}">${l}${k==="ambientes"&&v.ambientes.length?` <span class="muted">${v.ambientes.length}</span>`:""}${k==="fechar"&&p?`<span class="badge">${p}</span>`:""}</button>`).join("")}</nav>`;
+ const NI={"cliente": "<path d=\"M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c1.5-3.5 4.5-5 8-5s6.5 1.5 8 5\"/>", "ambientes": "<path d=\"M3 10.5 12 4l9 6.5V20H3z\"/><path d=\"M9.5 20v-6h5v6\"/>", "fechar": "<path d=\"M5 12.5l4.5 4.5L19 7.5\"/>"};
+ const tabs=`<nav class="bnav" role="tablist">${[["cliente","Cliente"],["ambientes","Ambientes"],["fechar","Fechar visita"]].map(([k,l])=>`<button role="tab" aria-selected="${ui.tab===k}" data-act="tab" data-tab="${k}"><span class="pillbg"><svg viewBox="0 0 24 24" aria-hidden="true">${NI[k]}</svg></span>${l}${k==="ambientes"&&v.ambientes.length?` (${v.ambientes.length})`:""}${k==="fechar"&&p?`<span class="badge">${p}</span>`:""}</button>`).join("")}</nav>`;
  const body=ui.tab==="cliente"?tabCliente(v):ui.tab==="ambientes"?tabAmbientes(v):tabFechar(v);
- app.innerHTML=topbar(v.cliente.nome||"Nova visita","Visita · "+new Date(v.criado).toLocaleDateString("pt-BR"),"home",tabs)+`<main class="wrap"><div class="spacer"></div><div class="spacer"></div>${body}</main>`;}
+ app.innerHTML=topbar(v.cliente.nome||"Nova visita","Visita · "+new Date(v.criado).toLocaleDateString("pt-BR"),"home")+`<main class="wrap"><div class="spacer"></div><div class="spacer"></div>${body}</main>`+tabs;}
 
 function inp(path,label,value,opts={}){const id="f-"+path.replace(/\W/g,"_");
  return `<div class="field"><label class="lbl" for="${id}">${esc(label)}</label>${opts.area?`<textarea id="${id}" data-bind="${path}" placeholder="${esc(opts.ph||"")}">${esc(value)}</textarea>`:`<input id="${id}" data-bind="${path}" value="${esc(value)}" ${opts.mode?`inputmode="${opts.mode}"`:""} placeholder="${esc(opts.ph||"")}" ${opts.type?`type="${opts.type}"`:""} autocomplete="off">`}</div>`;}
@@ -717,7 +809,7 @@ function tabCliente(v){const c=v.cliente;
  <div class="grid2">${inp("cliente.bairro","Bairro",c.bairro)}${inp("cliente.cep","CEP",c.cep,{mode:"numeric"})}</div>
  <div class="grid2">${inp("cliente.cidade","Cidade",c.cidade)}${inp("cliente.pd","Pé-direito padrão (m)",c.pd,{mode:"decimal",ph:"2,70"})}</div>
  <p class="muted small" style="margin:0">Pé-direito é a altura do piso ao teto. Ele entra no cálculo das paredes de todos os ambientes e pode ser mudado por ambiente.</p></div>
- <button class="btn pri block" data-act="tab" data-tab="ambientes">Próximo: ambientes →</button></div>`;}
+ <div class="actionbar nav"><button class="btn pri" data-act="tab" data-tab="ambientes">Próximo: ambientes →</button></div></div>`;}
 
 function tabAmbientes(v){
  return `<div class="stack">
@@ -727,7 +819,7 @@ function tabAmbientes(v){
   <div class="prog"><i style="width:${Math.round(pr.d/pr.t*100)}%"></i></div></div><span aria-hidden="true">›</span></button>`;}).join("")}
  ${!v.ambientes.length?`<div class="empty"><h3>Quais ambientes vamos reformar?</h3><p class="muted">Escolha abaixo. Cada ambiente traz só as perguntas que fazem sentido para ele.</p></div>`:""}
  <div class="card stack"><h3>Adicionar ambiente</h3><div class="typegrid">${Object.keys(ROOMS).map(t=>`<button data-act="addroom" data-type="${esc(t)}">${esc(t)}</button>`).join("")}</div></div>
- ${v.ambientes.length?`<button class="btn pri block" data-act="tab" data-tab="fechar">Próximo: fechar visita →</button>`:""}</div>`;}
+ ${v.ambientes.length?`<div class="actionbar nav"><button class="btn pri" data-act="tab" data-tab="fechar">Próximo: fechar visita →</button></div>`:""}</div>`;}
 
 function optVisual(f,o){
  if(f.t==="cor"){const h=(COLORS.find(c=>c[0]===o)||[])[1];return h?`<span class="sw" style="background:${h}"></span>`:"";}
@@ -777,7 +869,7 @@ function renderRoom(v){const room=v.ambientes.find(x=>x.id===ui.rid);if(!room){u
   ${tel?`<p class="small muted" style="margin:0">Inclinação mínima usual: colonial 30%, cerâmica de encaixe 25–30%, fibrocimento 10–15%, sanduíche e metálica 5–10%.</p>`:`<p class="small muted" style="margin:0">Ambiente em L ou irregular: some as áreas e informe no campo de área e perímetro.</p>`}</div></div>
  ${(ROOMS[room.tipo]||[]).map(sid=>sectionHTML(room,sid)).join("")}
  <div class="card">${inp("roomobs","Anotações deste ambiente",room.obs||"",{area:1,ph:"Ex.: cliente quer estilo industrial; mandou referências no WhatsApp"})}</div>
- <button class="btn pri block" data-act="visit">Concluir ambiente</button>
+ <div class="actionbar"><button class="btn pri" data-act="visit">Concluir ambiente ✓</button></div>
  ${ui.confirmDel===room.id?`<div class="confirm"><span>Excluir <b>${esc(room.nome)}</b> e tudo que foi marcado?</span><button class="btn danger" data-act="delroom2">Excluir</button><button class="btn" data-act="cancelDel">Cancelar</button></div>`:`<button class="btn danger block" data-act="delroom">Excluir ambiente</button>`}
  </div></main>`;}
 
